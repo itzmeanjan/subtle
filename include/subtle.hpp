@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <type_traits>
 
-// Constant-time comparison and selection of signed and unsigned integer values.
+// Constant-time comparison and selection of unsigned integer values.
 namespace subtle {
 
 // Given two unsigned integers x, y of type operandT ( of bitwidth 8, 16, 32 or

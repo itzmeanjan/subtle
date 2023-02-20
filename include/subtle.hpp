@@ -65,7 +65,7 @@ ct_select(const branchT br, const operandT x, const operandT y)
 
 // Given two unsigned integers x, y of type operandT ( of bitwidth 8, 16, 32 or
 // 64 ), this routine returns truth value ( if x <= y ) or false value ( in case
-// x > y ) based on result of lesser than equality test.
+// x > y ) based on result of lesser than equal comparison test.
 //
 // We represent truth value using maximum number that can be represented using
 // type returnT i.e. all bits of returnT are set to one. While for false value,
@@ -103,7 +103,7 @@ ct_le(const operandT x, const operandT y)
 
 // Given two unsigned integers x, y of type operandT ( of bitwidth 8, 16, 32 or
 // 64 ), this routine returns truth value ( if x > y ) or false value ( in case
-// x <= y ) based on result of greater than test.
+// x <= y ) based on result of greater than comparison test.
 //
 // We represent truth value using maximum number that can be represented using
 // type returnT i.e. all bits of returnT are set to one. While for false value,
@@ -119,7 +119,7 @@ ct_gt(const operandT x, const operandT y)
 
 // Given two unsigned integers x, y of type operandT ( of bitwidth 8, 16, 32 or
 // 64 ), this routine returns truth value ( if x >= y ) or false value ( in case
-// x < y ) based on result of greater than equality test.
+// x < y ) based on result of greater than equal comparison test.
 //
 // We represent truth value using maximum number that can be represented using
 // type returnT i.e. all bits of returnT are set to one. While for false value,
@@ -132,6 +132,22 @@ ct_ge(const operandT x, const operandT y)
   const returnT z0 = ct_gt<operandT, returnT>(x, y);
   const returnT z1 = ct_eq<operandT, returnT>(x, y);
   return z0 | z1; // (x > y) | (x == y)
+}
+
+// Given two unsigned integers x, y of type operandT ( of bitwidth 8, 16, 32 or
+// 64 ), this routine returns truth value ( if x < y ) or false value ( in case
+// x >= y ) based on result of lesser than comparison test.
+//
+// We represent truth value using maximum number that can be represented using
+// type returnT i.e. all bits of returnT are set to one. While for false value,
+// we set all bits of returnT to zero.
+template<typename operandT, typename returnT>
+static inline constexpr returnT
+ct_lt(const operandT x, const operandT y)
+  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
+{
+  const returnT z = ct_ge<operandT, returnT>(x, y);
+  return ~z; // bit-inverted result of >= test
 }
 
 }

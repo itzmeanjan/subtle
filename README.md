@@ -1,2 +1,2 @@
 # subtle
-Constant-Time Comparison and Selection of Unsigned Integer Types
+Constant-Time Comparison and Selection of Unsigned Integer Values

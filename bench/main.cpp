@@ -36,4 +36,13 @@ BENCHMARK(bench_subtle::native_gt<uint32_t>);
 BENCHMARK(bench_subtle::ct_gt<uint64_t>);
 BENCHMARK(bench_subtle::native_gt<uint64_t>);
 
+BENCHMARK(bench_subtle::ct_ge<uint8_t>);
+BENCHMARK(bench_subtle::native_ge<uint8_t>);
+BENCHMARK(bench_subtle::ct_ge<uint16_t>);
+BENCHMARK(bench_subtle::native_ge<uint16_t>);
+BENCHMARK(bench_subtle::ct_ge<uint32_t>);
+BENCHMARK(bench_subtle::native_ge<uint32_t>);
+BENCHMARK(bench_subtle::ct_ge<uint64_t>);
+BENCHMARK(bench_subtle::native_ge<uint64_t>);
+
 BENCHMARK_MAIN();

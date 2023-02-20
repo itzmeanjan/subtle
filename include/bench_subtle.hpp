@@ -25,14 +25,6 @@ ct_eq(benchmark::State& state)
     benchmark::DoNotOptimize(x);
     benchmark::DoNotOptimize(y);
     benchmark::ClobberMemory();
-
-    x += (z >> 31);
-    y -= (z >> 31);
-
-    benchmark::DoNotOptimize(z);
-    benchmark::DoNotOptimize(x);
-    benchmark::DoNotOptimize(y);
-    benchmark::ClobberMemory();
   }
 }
 
@@ -50,14 +42,6 @@ native_eq(benchmark::State& state)
 
   for (auto _ : state) {
     const uint32_t z = -static_cast<uint32_t>(x == y);
-
-    benchmark::DoNotOptimize(z);
-    benchmark::DoNotOptimize(x);
-    benchmark::DoNotOptimize(y);
-    benchmark::ClobberMemory();
-
-    x += (z >> 31);
-    y -= (z >> 31);
 
     benchmark::DoNotOptimize(z);
     benchmark::DoNotOptimize(x);
@@ -85,14 +69,6 @@ ct_ne(benchmark::State& state)
     benchmark::DoNotOptimize(x);
     benchmark::DoNotOptimize(y);
     benchmark::ClobberMemory();
-
-    x += (z >> 31);
-    y -= (z >> 31);
-
-    benchmark::DoNotOptimize(z);
-    benchmark::DoNotOptimize(x);
-    benchmark::DoNotOptimize(y);
-    benchmark::ClobberMemory();
   }
 }
 
@@ -110,14 +86,6 @@ native_ne(benchmark::State& state)
 
   for (auto _ : state) {
     const uint32_t z = -static_cast<uint32_t>(x != y);
-
-    benchmark::DoNotOptimize(z);
-    benchmark::DoNotOptimize(x);
-    benchmark::DoNotOptimize(y);
-    benchmark::ClobberMemory();
-
-    x += (z >> 31);
-    y -= (z >> 31);
 
     benchmark::DoNotOptimize(z);
     benchmark::DoNotOptimize(x);
@@ -145,14 +113,6 @@ ct_le(benchmark::State& state)
     benchmark::DoNotOptimize(x);
     benchmark::DoNotOptimize(y);
     benchmark::ClobberMemory();
-
-    x += (z >> 31);
-    y -= (z >> 31);
-
-    benchmark::DoNotOptimize(z);
-    benchmark::DoNotOptimize(x);
-    benchmark::DoNotOptimize(y);
-    benchmark::ClobberMemory();
   }
 }
 
@@ -170,14 +130,6 @@ native_le(benchmark::State& state)
 
   for (auto _ : state) {
     const uint32_t z = -static_cast<uint32_t>(x <= y);
-
-    benchmark::DoNotOptimize(z);
-    benchmark::DoNotOptimize(x);
-    benchmark::DoNotOptimize(y);
-    benchmark::ClobberMemory();
-
-    x += (z >> 31);
-    y -= (z >> 31);
 
     benchmark::DoNotOptimize(z);
     benchmark::DoNotOptimize(x);
@@ -205,14 +157,6 @@ ct_gt(benchmark::State& state)
     benchmark::DoNotOptimize(x);
     benchmark::DoNotOptimize(y);
     benchmark::ClobberMemory();
-
-    x += (z >> 31);
-    y -= (z >> 31);
-
-    benchmark::DoNotOptimize(z);
-    benchmark::DoNotOptimize(x);
-    benchmark::DoNotOptimize(y);
-    benchmark::ClobberMemory();
   }
 }
 
@@ -230,14 +174,6 @@ native_gt(benchmark::State& state)
 
   for (auto _ : state) {
     const uint32_t z = -static_cast<uint32_t>(x > y);
-
-    benchmark::DoNotOptimize(z);
-    benchmark::DoNotOptimize(x);
-    benchmark::DoNotOptimize(y);
-    benchmark::ClobberMemory();
-
-    x += (z >> 31);
-    y -= (z >> 31);
 
     benchmark::DoNotOptimize(z);
     benchmark::DoNotOptimize(x);
@@ -265,14 +201,6 @@ ct_ge(benchmark::State& state)
     benchmark::DoNotOptimize(x);
     benchmark::DoNotOptimize(y);
     benchmark::ClobberMemory();
-
-    x += (z >> 31);
-    y -= (z >> 31);
-
-    benchmark::DoNotOptimize(z);
-    benchmark::DoNotOptimize(x);
-    benchmark::DoNotOptimize(y);
-    benchmark::ClobberMemory();
   }
 }
 
@@ -290,14 +218,6 @@ native_ge(benchmark::State& state)
 
   for (auto _ : state) {
     const uint32_t z = -static_cast<uint32_t>(x >= y);
-
-    benchmark::DoNotOptimize(z);
-    benchmark::DoNotOptimize(x);
-    benchmark::DoNotOptimize(y);
-    benchmark::ClobberMemory();
-
-    x += (z >> 31);
-    y -= (z >> 31);
 
     benchmark::DoNotOptimize(z);
     benchmark::DoNotOptimize(x);
@@ -325,14 +245,6 @@ ct_lt(benchmark::State& state)
     benchmark::DoNotOptimize(x);
     benchmark::DoNotOptimize(y);
     benchmark::ClobberMemory();
-
-    x += (z >> 31);
-    y -= (z >> 31);
-
-    benchmark::DoNotOptimize(z);
-    benchmark::DoNotOptimize(x);
-    benchmark::DoNotOptimize(y);
-    benchmark::ClobberMemory();
   }
 }
 
@@ -350,14 +262,6 @@ native_lt(benchmark::State& state)
 
   for (auto _ : state) {
     const uint32_t z = -static_cast<uint32_t>(x < y);
-
-    benchmark::DoNotOptimize(z);
-    benchmark::DoNotOptimize(x);
-    benchmark::DoNotOptimize(y);
-    benchmark::ClobberMemory();
-
-    x += (z >> 31);
-    y -= (z >> 31);
 
     benchmark::DoNotOptimize(z);
     benchmark::DoNotOptimize(x);

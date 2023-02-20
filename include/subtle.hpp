@@ -63,4 +63,42 @@ ct_select(const branchT br, const operandT x, const operandT y)
   return selected;
 }
 
+// Given two unsigned integers x, y of type operandT ( of bitwidth 8, 16, 32 or
+// 64 ), this routine returns truth value ( if x <= y ) or false value ( in case
+// x > y ) based on result of lesser than equality test.
+//
+// We represent truth value using maximum number that can be represented using
+// type returnT i.e. all bits of returnT are set to one. While for false value,
+// we set all bits of returnT to zero.
+//
+// This implementation collects a lot of inspiration from
+// https://github.com/dalek-cryptography/subtle/blob/bd282be01f1c2da8ab03922e03457102a76a0e05/src/lib.rs#L808-L841
+//
+// I also found
+// https://cs.opensource.google/go/go/+/refs/tags/go1.20.1:src/crypto/subtle/constant_time.go;l=56-62
+// to be pretty helpful.
+template<typename operandT, typename returnT>
+static inline constexpr returnT
+ct_le(const operandT x, const operandT y)
+  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
+{
+  const operandT gt_bits = x & ~y;
+  operandT lt_bits = ~x & y;
+
+  for (size_t pow = 1; pow < sizeof(operandT) * 8;) {
+    lt_bits |= lt_bits >> pow;
+    pow += pow;
+  }
+
+  operandT bit = gt_bits & ~lt_bits;
+
+  for (size_t pow = 1; pow < sizeof(operandT) * 8;) {
+    bit |= bit >> pow;
+    pow += pow;
+  }
+
+  const returnT z = -static_cast<returnT>((bit & 1) ^ 1);
+  return z;
+}
+
 }

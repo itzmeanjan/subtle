@@ -5,7 +5,7 @@
 
 // Test cases for ensuring functional correctness of constant-time comparison
 // and selection operations
-namespace subtle_test {
+namespace test_subtle {
 
 // Test functional correctness of constant-time equality operation over unsigned
 // integer types, checking result against native comparison operator ( i.e. == )

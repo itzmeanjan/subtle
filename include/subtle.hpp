@@ -38,7 +38,7 @@ ct_ne(const operandT x, const operandT y)
   requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
 {
   const returnT z = ct_eq<operandT, returnT>(x, y);
-  return ~z; // bit-reverse result of equality check
+  return ~z; // bit-inverted result of equality check
 }
 
 // Given a branch value br ( of type branchT ) holding either truth or false
@@ -99,6 +99,22 @@ ct_le(const operandT x, const operandT y)
 
   const returnT z = -static_cast<returnT>((bit & 1) ^ 1);
   return z;
+}
+
+// Given two unsigned integers x, y of type operandT ( of bitwidth 8, 16, 32 or
+// 64 ), this routine returns truth value ( if x > y ) or false value ( in case
+// x <= y ) based on result of greater than test.
+//
+// We represent truth value using maximum number that can be represented using
+// type returnT i.e. all bits of returnT are set to one. While for false value,
+// we set all bits of returnT to zero.
+template<typename operandT, typename returnT>
+static inline constexpr returnT
+ct_gt(const operandT x, const operandT y)
+  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
+{
+  const returnT z = ct_le<operandT, returnT>(x, y);
+  return ~z; // bit-inverted result of <= test
 }
 
 }

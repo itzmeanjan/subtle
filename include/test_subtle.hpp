@@ -28,7 +28,10 @@ test_ct_eq()
     const operandT y = dis(gen);
 
     const returnT z = subtle::ct_eq<operandT, returnT>(x, y);
+
     assert(z == (x == y ? truthv : falsev));
+    assert(truthv == (subtle::ct_eq<operandT, returnT>(x, x)));
+    assert(truthv == (subtle::ct_eq<operandT, returnT>(y, y)));
   }
 }
 
@@ -78,7 +81,10 @@ test_ct_le()
     const operandT y = dis(gen);
 
     const returnT z = subtle::ct_le<operandT, returnT>(x, y);
+
     assert(z == (x <= y ? truthv : falsev));
+    assert(truthv == (subtle::ct_le<operandT, returnT>(x, x)));
+    assert(truthv == (subtle::ct_le<operandT, returnT>(y, y)));
   }
 }
 
@@ -128,7 +134,10 @@ test_ct_ge()
     const operandT y = dis(gen);
 
     const returnT z = subtle::ct_ge<operandT, returnT>(x, y);
+
     assert(z == (x >= y ? truthv : falsev));
+    assert(truthv == (subtle::ct_ge<operandT, returnT>(x, x)));
+    assert(truthv == (subtle::ct_ge<operandT, returnT>(y, y)));
   }
 }
 

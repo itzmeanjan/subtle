@@ -132,4 +132,29 @@ test_ct_ge()
   }
 }
 
+// Test functional correctness of constant-time lesser than operation over
+// unsigned integer types, checking result against native comparison operation.
+template<typename operandT,
+         typename returnT,
+         const size_t iterations = (1ul << 16)>
+void
+test_ct_lt()
+  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
+{
+  constexpr returnT truthv = -static_cast<returnT>(1);
+  constexpr returnT falsev = 0;
+
+  std::random_device rd;
+  std::mt19937_64 gen(rd());
+  std::uniform_int_distribution<operandT> dis;
+
+  for (size_t i = 0; i < iterations; i++) {
+    const operandT x = dis(gen);
+    const operandT y = dis(gen);
+
+    const returnT z = subtle::ct_lt<operandT, returnT>(x, y);
+    assert(z == (x < y ? truthv : falsev));
+  }
+}
+
 }

@@ -109,5 +109,26 @@ main()
   subtle_test::test_ct_ge<uint64_t, uint64_t>();
   std::cout << "[test] Greater than equality test\n";
 
+  subtle_test::test_ct_lt<uint8_t, uint8_t>();
+  subtle_test::test_ct_lt<uint16_t, uint8_t>();
+  subtle_test::test_ct_lt<uint32_t, uint8_t>();
+  subtle_test::test_ct_lt<uint64_t, uint8_t>();
+
+  subtle_test::test_ct_lt<uint8_t, uint16_t>();
+  subtle_test::test_ct_lt<uint16_t, uint16_t>();
+  subtle_test::test_ct_lt<uint32_t, uint16_t>();
+  subtle_test::test_ct_lt<uint64_t, uint16_t>();
+
+  subtle_test::test_ct_lt<uint8_t, uint32_t>();
+  subtle_test::test_ct_lt<uint16_t, uint32_t>();
+  subtle_test::test_ct_lt<uint32_t, uint32_t>();
+  subtle_test::test_ct_lt<uint64_t, uint32_t>();
+
+  subtle_test::test_ct_lt<uint8_t, uint64_t>();
+  subtle_test::test_ct_lt<uint16_t, uint64_t>();
+  subtle_test::test_ct_lt<uint32_t, uint64_t>();
+  subtle_test::test_ct_lt<uint64_t, uint64_t>();
+  std::cout << "[test] Lesser than test\n";
+
   return 0;
 }

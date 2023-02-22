@@ -21,7 +21,7 @@ ct_eq(const operandT x, const operandT y)
   const operandT a = x ^ y;
   const operandT b = a | (-a);
   const operandT c = b >> ((sizeof(operandT) * 8) - 1); // select only MSB
-  const returnT d = -static_cast<returnT>(c ^ 1);       // prepare result
+  const returnT d = ~(-static_cast<returnT>(c));        // prepare result
 
   return d;
 }

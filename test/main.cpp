@@ -65,7 +65,28 @@ main()
   test_subtle::test_ct_select<uint16_t, uint64_t>();
   test_subtle::test_ct_select<uint32_t, uint64_t>();
   test_subtle::test_ct_select<uint64_t, uint64_t>();
-  std::cout << "[test] Selection test\n";
+  std::cout << "[test] Conditional selection test\n";
+
+  test_subtle::test_ct_swap<uint8_t, uint8_t>();
+  test_subtle::test_ct_swap<uint16_t, uint8_t>();
+  test_subtle::test_ct_swap<uint32_t, uint8_t>();
+  test_subtle::test_ct_swap<uint64_t, uint8_t>();
+
+  test_subtle::test_ct_swap<uint8_t, uint16_t>();
+  test_subtle::test_ct_swap<uint16_t, uint16_t>();
+  test_subtle::test_ct_swap<uint32_t, uint16_t>();
+  test_subtle::test_ct_swap<uint64_t, uint16_t>();
+
+  test_subtle::test_ct_swap<uint8_t, uint32_t>();
+  test_subtle::test_ct_swap<uint16_t, uint32_t>();
+  test_subtle::test_ct_swap<uint32_t, uint32_t>();
+  test_subtle::test_ct_swap<uint64_t, uint32_t>();
+
+  test_subtle::test_ct_swap<uint8_t, uint64_t>();
+  test_subtle::test_ct_swap<uint16_t, uint64_t>();
+  test_subtle::test_ct_swap<uint32_t, uint64_t>();
+  test_subtle::test_ct_swap<uint64_t, uint64_t>();
+  std::cout << "[test] Conditional swap test\n";
 
   test_subtle::test_ct_le<uint8_t, uint8_t>();
   test_subtle::test_ct_le<uint16_t, uint8_t>();

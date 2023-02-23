@@ -60,8 +60,8 @@ test_ct_ne()
   }
 }
 
-// Test functional correctness of constant-time selection operation over
-// unsigned integer types.
+// Test functional correctness of constant-time conditional selection operation
+// over unsigned integer types.
 template<typename operandT,
          typename returnT,
          const size_t iterations = (1ul << 16)>
@@ -82,6 +82,47 @@ test_ct_select()
 
     assert(x == (subtle::ct_select(truthv, x, y)));
     assert(y == (subtle::ct_select(falsev, x, y)));
+  }
+}
+
+// Test functional correctness of constant-time conditional swap operation over
+// unsigned integer types.
+template<typename operandT,
+         typename returnT,
+         const size_t iterations = (1ul << 16)>
+void
+test_ct_swap()
+  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
+{
+  constexpr returnT truthv = -static_cast<returnT>(1);
+  constexpr returnT falsev = 0;
+
+  std::random_device rd;
+  std::mt19937_64 gen(rd());
+  std::uniform_int_distribution<operandT> dis;
+
+  for (size_t i = 0; i < iterations; i++) {
+    operandT x = dis(gen);
+    operandT y = dis(gen);
+
+    // keep a copy so that writing assertion becomes easier
+    const auto tmpx = x;
+    const auto tmpy = y;
+
+    subtle::ct_swap(truthv, x, y); // x, y = y, x
+
+    assert(tmpx == y);
+    assert(tmpy == x);
+
+    subtle::ct_swap(truthv, x, y); // x, y = y, x
+
+    assert(tmpx == x);
+    assert(tmpy == y);
+
+    subtle::ct_swap(falsev, x, y); // x, y = x, y
+
+    assert(tmpx == x);
+    assert(tmpy == y);
   }
 }
 

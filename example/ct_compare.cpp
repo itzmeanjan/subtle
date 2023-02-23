@@ -12,6 +12,15 @@
 //
 // $ g++ -std=c++20 -Wall -O3 -march=native -I include/ example/ct_compare.cpp
 // $ ./a.out
+//
+// If interested in studying the assembly generated for ct_compare routine, by
+// compiler, try following
+//
+// 1. First compile source with debug info ( and high optimization )
+// $ g++ -std=c++20 -O3 -march=native -I include/ -g3 -c example/ct_compare.cpp
+// 2. Disassemble object file ( along with unmangled and interleaved source )
+// $ objdump -dwCS -Mintel ct_compare.o
+// 3. Now study assembly.
 
 // Generates N (>=0) -many random bytes using Mersenne Twister engine, seeded
 // with system randomness.

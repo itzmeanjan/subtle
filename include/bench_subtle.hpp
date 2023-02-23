@@ -19,7 +19,7 @@ ct_eq(benchmark::State& state)
   operandT y = dis(gen);
 
   for (auto _ : state) {
-    const uint32_t z = subtle::ct_eq<operandT, uint32_t>(x, y);
+    uint32_t z = subtle::ct_eq<operandT, uint32_t>(x, y);
 
     benchmark::DoNotOptimize(z);
     benchmark::DoNotOptimize(x);
@@ -41,7 +41,7 @@ native_eq(benchmark::State& state)
   operandT y = dis(gen);
 
   for (auto _ : state) {
-    const uint32_t z = -static_cast<uint32_t>(x == y);
+    uint32_t z = -static_cast<uint32_t>(x == y);
 
     benchmark::DoNotOptimize(z);
     benchmark::DoNotOptimize(x);
@@ -63,7 +63,7 @@ ct_ne(benchmark::State& state)
   operandT y = dis(gen);
 
   for (auto _ : state) {
-    const uint32_t z = subtle::ct_ne<operandT, uint32_t>(x, y);
+    uint32_t z = subtle::ct_ne<operandT, uint32_t>(x, y);
 
     benchmark::DoNotOptimize(z);
     benchmark::DoNotOptimize(x);
@@ -85,7 +85,7 @@ native_ne(benchmark::State& state)
   operandT y = dis(gen);
 
   for (auto _ : state) {
-    const uint32_t z = -static_cast<uint32_t>(x != y);
+    uint32_t z = -static_cast<uint32_t>(x != y);
 
     benchmark::DoNotOptimize(z);
     benchmark::DoNotOptimize(x);
@@ -107,7 +107,7 @@ ct_le(benchmark::State& state)
   operandT y = dis(gen);
 
   for (auto _ : state) {
-    const uint32_t z = subtle::ct_le<operandT, uint32_t>(x, y);
+    uint32_t z = subtle::ct_le<operandT, uint32_t>(x, y);
 
     benchmark::DoNotOptimize(z);
     benchmark::DoNotOptimize(x);
@@ -129,7 +129,7 @@ native_le(benchmark::State& state)
   operandT y = dis(gen);
 
   for (auto _ : state) {
-    const uint32_t z = -static_cast<uint32_t>(x <= y);
+    uint32_t z = -static_cast<uint32_t>(x <= y);
 
     benchmark::DoNotOptimize(z);
     benchmark::DoNotOptimize(x);
@@ -151,7 +151,7 @@ ct_gt(benchmark::State& state)
   operandT y = dis(gen);
 
   for (auto _ : state) {
-    const uint32_t z = subtle::ct_gt<operandT, uint32_t>(x, y);
+    uint32_t z = subtle::ct_gt<operandT, uint32_t>(x, y);
 
     benchmark::DoNotOptimize(z);
     benchmark::DoNotOptimize(x);
@@ -173,7 +173,7 @@ native_gt(benchmark::State& state)
   operandT y = dis(gen);
 
   for (auto _ : state) {
-    const uint32_t z = -static_cast<uint32_t>(x > y);
+    uint32_t z = -static_cast<uint32_t>(x > y);
 
     benchmark::DoNotOptimize(z);
     benchmark::DoNotOptimize(x);
@@ -195,7 +195,7 @@ ct_ge(benchmark::State& state)
   operandT y = dis(gen);
 
   for (auto _ : state) {
-    const uint32_t z = subtle::ct_ge<operandT, uint32_t>(x, y);
+    uint32_t z = subtle::ct_ge<operandT, uint32_t>(x, y);
 
     benchmark::DoNotOptimize(z);
     benchmark::DoNotOptimize(x);
@@ -217,7 +217,7 @@ native_ge(benchmark::State& state)
   operandT y = dis(gen);
 
   for (auto _ : state) {
-    const uint32_t z = -static_cast<uint32_t>(x >= y);
+    uint32_t z = -static_cast<uint32_t>(x >= y);
 
     benchmark::DoNotOptimize(z);
     benchmark::DoNotOptimize(x);
@@ -239,7 +239,7 @@ ct_lt(benchmark::State& state)
   operandT y = dis(gen);
 
   for (auto _ : state) {
-    const uint32_t z = subtle::ct_lt<operandT, uint32_t>(x, y);
+    uint32_t z = subtle::ct_lt<operandT, uint32_t>(x, y);
 
     benchmark::DoNotOptimize(z);
     benchmark::DoNotOptimize(x);
@@ -261,7 +261,7 @@ native_lt(benchmark::State& state)
   operandT y = dis(gen);
 
   for (auto _ : state) {
-    const uint32_t z = -static_cast<uint32_t>(x < y);
+    uint32_t z = -static_cast<uint32_t>(x < y);
 
     benchmark::DoNotOptimize(z);
     benchmark::DoNotOptimize(x);

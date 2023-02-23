@@ -18,6 +18,15 @@ BENCHMARK(bench_subtle::native_ne<uint32_t>);
 BENCHMARK(bench_subtle::ct_ne<uint64_t>);
 BENCHMARK(bench_subtle::native_ne<uint64_t>);
 
+BENCHMARK(bench_subtle::ct_select<uint8_t>);
+BENCHMARK(bench_subtle::native_select<uint8_t>);
+BENCHMARK(bench_subtle::ct_select<uint16_t>);
+BENCHMARK(bench_subtle::native_select<uint16_t>);
+BENCHMARK(bench_subtle::ct_select<uint32_t>);
+BENCHMARK(bench_subtle::native_select<uint32_t>);
+BENCHMARK(bench_subtle::ct_select<uint64_t>);
+BENCHMARK(bench_subtle::native_select<uint64_t>);
+
 BENCHMARK(bench_subtle::ct_le<uint8_t>);
 BENCHMARK(bench_subtle::native_le<uint8_t>);
 BENCHMARK(bench_subtle::ct_le<uint16_t>);

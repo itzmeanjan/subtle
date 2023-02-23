@@ -94,6 +94,54 @@ native_ne(benchmark::State& state)
   }
 }
 
+// Benchmark constant-time conditional selection
+template<typename operandT>
+void
+ct_select(benchmark::State& state)
+{
+  std::random_device rd;
+  std::mt19937_64 gen(rd());
+  std::uniform_int_distribution<operandT> dis;
+
+  uint32_t br = -static_cast<uint32_t>(dis(gen) & 1);
+  operandT x = dis(gen);
+  operandT y = dis(gen);
+
+  for (auto _ : state) {
+    operandT z = subtle::ct_select(br, x, y);
+
+    benchmark::DoNotOptimize(z);
+    benchmark::DoNotOptimize(br);
+    benchmark::DoNotOptimize(x);
+    benchmark::DoNotOptimize(y);
+    benchmark::ClobberMemory();
+  }
+}
+
+// Benchmark non-constant-time conditional selection using ternary operator
+template<typename operandT>
+void
+native_select(benchmark::State& state)
+{
+  std::random_device rd;
+  std::mt19937_64 gen(rd());
+  std::uniform_int_distribution<operandT> dis;
+
+  uint32_t br = -static_cast<uint32_t>(dis(gen) & 1);
+  operandT x = dis(gen);
+  operandT y = dis(gen);
+
+  for (auto _ : state) {
+    operandT z = br ? x : y;
+
+    benchmark::DoNotOptimize(z);
+    benchmark::DoNotOptimize(br);
+    benchmark::DoNotOptimize(x);
+    benchmark::DoNotOptimize(y);
+    benchmark::ClobberMemory();
+  }
+}
+
 // Benchmark constant-time lesser than equality check operation
 template<typename operandT>
 void

@@ -21,9 +21,10 @@ ct_eq(const operandT x, const operandT y)
   const operandT a = x ^ y;
   const operandT b = a | (-a);
   const operandT c = b >> ((sizeof(operandT) * 8) - 1); // select only MSB
-  const returnT d = ~(-static_cast<returnT>(c));        // prepare result
+  const returnT d = static_cast<returnT>(c);
+  const returnT e = d - static_cast<returnT>(1);
 
-  return d;
+  return e;
 }
 
 // Given two unsigned integers x, y of type operandT ( of bitwidth 8, 16, 32 or

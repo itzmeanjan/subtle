@@ -3,7 +3,11 @@ Constant-Time Comparison, Conditional Selection and Swapping of Unsigned Integer
 
 ## Overview
 
-In cryptographic library implementations we care about how much information gets leaked when certain procedure ( say key generation of public key encryption (PKE) or message signing using some digital signature algorithm (DSA) ) is executed in some environment. Based on what that specific environment is, various sorts of observation tactics an adversary can deploy for collecting leaked information, which can result in partial to full recovery of secrets. We would like to write implementations which leaks as little information as possible i.e. it should not be dependent on some secret input what intructions to be executed next or which memory addresses to be accessed ( because it can result in cache miss and that increases latency, which can be measured ) or what's the latency of some instruction ( say integer division ) operated on some secret input etc..
+In cryptographic library implementations we care about how much information gets leaked when certain procedure ( say key generation of public key encryption (PKE) or message signing using some digital signature algorithm (DSA) ) is executed in some environment. Based on what that specific environment is, various sorts of observation tactics an adversary can deploy for collecting leaked information, which can result in partial to full recovery of secrets. We would like to write implementations which leaks as little information ( regarding secrets in our implementation ) as possible i.e. it should not be dependent on some secret input
+
+- What intructions to be executed next, because different instructions have different latencies and it can also fail CPU branch predictor resulting in pretty expensive rewinding - and it can be observed and measured.
+- Or which memory addresses to be accessed, because it can result in cache miss and that increases latency, which can also be observed and measured.
+- Or what the latency of some instruction ( say integer division ) is.
 
 > **Note** Read more about need for constant-time implementations @ https://www.bearssl.org/constanttime.html.
 
@@ -165,7 +169,7 @@ bench_subtle::native_lt<uint64_t>          0.995 ns        0.995 ns    697113948
 - Conditional selection operation s.t. `cond ? val0 : val1`
 - Conditional swap operation s.t. `if (cond) { std::swap(val0, val1); }`
 
-`subtle` being a template library you can ( or need to ) specify what type of operands you're working with and what type of result you want from these constant-time functions. 
+> **Note** `subtle` being a template library you can ( or need to ) specify what type of operands you're working with and what type of result you want from these constant-time functions.
 
 Say for example, you've two values of type `uint8_t` held in variables $a$, $b$ and you want to compare their values to see if $a$ equals to $b$ or not. You can simply write following
 
@@ -178,7 +182,7 @@ std::cin >> b;
 const bool flg = a == b;
 ```
 
-Which is perfectly fine, but in constant-time implementation, we want to avoid using relational operators ( resulting in boolean value ) and only rely on integer addition, subtraction and bit-wise operations. It's because whenever booleans are involved there is high chance that it can be transformed into some conditional jump, which can result in instruction cache miss and it can be measured. While if we can only rely on constant-time instructions ( say integer addition, subtraction or bit-wise operations etc. ) all the intructions will be executed in order and final result will be acccumulated as some integer value and hopefully compiler won't be able to optimize it away. We can write
+Which is perfectly fine, but in constant-time implementation, we want to avoid using relational operators ( resulting in boolean value ) and only rely on integer addition, subtraction and bit-wise operations. It's because whenever booleans are involved there is high chance that it can be transformed into some conditional jump, which can result in instruction cache miss and it can be measured. While if we can only rely on constant-time instructions ( say integer addition, subtraction or bit-wise operations etc. ) laid next to each other in instruction cache, all the intructions will be executed in order and final result will be acccumulated as some integer value and hopefully compiler won't be able to recognize and optimize it away. We can write
 
 ```cpp
 const uint8_t flg = subtle::ct_eq<uint8_t, uint8_t>(a, b);
@@ -186,12 +190,12 @@ const uint8_t flg = subtle::ct_eq<uint8_t, uint8_t>(a, b);
 
 With above implementation, we get flg = 0xff, in case $a == b$, otherwise flg = 0x00.
 
-Constant-time implementation becomes more practical and interesting, when say we've to compare a set to values to another set to values to find whether they are same or not. Let's say we've two byte arrays $a$, $b$ and we want to compare them to figure if $a == b$. Now we want to keep a few things in mind, 
+Constant-time implementation becomes more practical and interesting, when say we've to compare a set to values to another set to values to find whether they are same or not. Let's say we've two byte arrays $a$, $b$ ( of same length, for sake of simplicity ) and we want to compare them to figure if $a == b$. Now we want to keep a few things in mind,
 
 - Don't decide which code path to take ( ofcourse in runtime ) based on contents of byte arrays $a$ or $b$.
 - Don't decide which memory addresses to access based on contents of byte arrays $a$ or $b$.
 
-That's because these two byte arrays are holding secret data. If we do any of above mentioned things, during the comparison, then it can leak some information about content of those byte arrays to some adversary who might be observing that. There are various possible ways to collect these sort of informations in various different execution environments.
+That's because these two byte arrays are holding secret data. If we do any of above mentioned things, during the comparison, then it can leak some information about content of those byte arrays to some adversary who might be observing. There are various possible ways to collect these sort of leaked information in various different execution environments.
 
 So we can write
 
@@ -211,7 +215,7 @@ for(size_t i = 0; i < 16; i++) {
 }
 ```
 
-But you understand why it's not something we want to do in cryptographic context. We're exactly deciding when to break out of the loop ( i.e. which code path to take or which instructions to execute next ) based on contents of byte arrays $a$ and $b$.
+But you understand why it's not something we want to do in cryptographic context. We're exactly deciding when to break out of the loop ( i.e. which code path to take or which instructions to execute next ) based on content of byte arrays $a$ and $b$.
 
 Let's make it better
 
@@ -248,7 +252,7 @@ std::memset(dst, 0, 16 * !flg);
 
 We're branching out ( i.e. deciding which instruction to execute ) based on secret value $flg$. 
 
-We can do better than this using `subtle`. First let us perform comparison of two secret bytearrays.
+We can avoid this using `subtle`. First let us perform comparison of two secret bytearrays.
 
 ```cpp
 uint32_t flg = -1u; // = 0xffffffff
@@ -262,7 +266,7 @@ If content of those two bytearrays match, flg = 0xffffffff, otherwise flg = 0.
 
 > **Note** You may want `flg` to be `uint64_t`, in that case truth value is denoted by 0xffffffffffffffff and false value by 0. Read API documentation in [subtle.hpp](./include/subtle.hpp).
 
-$flg$ is a secret piece of data ( holds accumulated result of secret comparison ) and we can't branch on its value. We can use `subtle` for conditionally selecting ( condition is truthness or falseness of value held in $flg$ ) what value to write in $dst$, in constant-time.
+Again $flg$ is a secret piece of data ( holds accumulated result of secret comparison ) and we can't branch on its value. We can use `subtle` for conditionally selecting ( condition is truthness or falseness of value held in $flg$ ) what value to write in $dst$, in constant-time.
 
 ```cpp
 for(size_t i = 0; i < 16; i++) {
@@ -270,7 +274,7 @@ for(size_t i = 0; i < 16; i++) {
 }
 ```
 
-I maintain few examples, where I demonstrate how you can use `subtle` API for writing constant-time code.
+I maintain a few examples, where I demonstrate how you can use `subtle` API for writing constant-time code.
 
 - Comparison of two byte arrays @ [here](./example/ct_compare.cpp)
 - Conditional copying of byte array @ [here](./example/ct_copy.cpp)

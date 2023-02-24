@@ -20,7 +20,7 @@ benchmark: bench/a.out
 	./$<
 
 clean:
-	find . -name '*.out' -o -name '*.o' -o -name '*.so' -o -name '*.gch' | xargs rm -rf
+	find . -name '*.out*' -o -name '*.o' -o -name '*.so' -o -name '*.gch' | xargs rm -rf
 
 format:
 	find . -name '*.hpp' -o -name '*.cpp' -o -name '*.hpp' | xargs clang-format -i --style=Mozilla

@@ -21,9 +21,10 @@ ct_eq(const operandT x, const operandT y)
   const operandT a = x ^ y;
   const operandT b = a | (-a);
   const operandT c = b >> ((sizeof(operandT) * 8) - 1); // select only MSB
-  const returnT d = -static_cast<returnT>(c ^ 1);       // prepare result
+  const returnT d = static_cast<returnT>(c);
+  const returnT e = d - static_cast<returnT>(1);
 
-  return d;
+  return e;
 }
 
 // Given two unsigned integers x, y of type operandT ( of bitwidth 8, 16, 32 or
@@ -62,6 +63,25 @@ ct_select(const branchT br, const operandT x, const operandT y)
   const operandT selected = (x & w) | (y & (~w));      // br ? x : y
 
   return selected;
+}
+
+// Given a branch value br ( of type branchT ) holding either truth value (
+// represented using value of type branchT s.t. all the bits are set to 1 ) or
+// false value ( represented using value of type branchT s.t. all the bits are
+// set to 0 ), this function swaps values held by x, y if br is truth value.
+// Otherwise both x, y keep their values.
+//
+// branchT and operandT can be unsigned integers of bit width 8, 16, 32 or 64.
+template<typename branchT, typename operandT>
+static inline constexpr void
+ct_swap(const branchT br, operandT& x, operandT& y)
+  requires(std::is_unsigned_v<branchT> && std::is_unsigned_v<operandT>)
+{
+  const operandT mask = -static_cast<operandT>(br & 1);
+
+  x = x ^ (mask & y);
+  y = y ^ (mask & x);
+  x = x ^ (mask & y);
 }
 
 // Given two unsigned integers x, y of type operandT ( of bitwidth 8, 16, 32 or

@@ -41,7 +41,7 @@ $ cmake --version
 cmake version 3.25.2
 ```
 
-- For benchmarking implementation against baseline, `google-benchmark` headers and library must be installed globally. Follow [this](https://github.com/google/benchmark/tree/3b19d7222db7babfdc9b3949408b2294c3bbb540#installation) guide.
+- For benchmarking implementation against baseline, `google-benchmark` headers and library must be installed globally. Follow [this](https://github.com/google/benchmark/tree/3b19d722#installation) guide.
 
 ## Testing
 
@@ -73,6 +73,8 @@ For understanding how much expensive ( from respective operation's latency point
 ```bash
 make benchmark
 ```
+
+> **Warning** Ensure you don't have CPU scaling enabled during benchmarking, follow [this](https://github.com/google/benchmark/blob/3b19d722/docs/user_guide.md#disabling-cpu-frequency-scaling) guide.
 
 ### On Intel(R) Core(TM) i5-8279U CPU @ 2.40GHz ( when compiled with Clang )
 

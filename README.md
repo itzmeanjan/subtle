@@ -1,6 +1,24 @@
 # subtle
 Constant-Time Comparison, Conditional Selection and Swapping of Unsigned Integer Values
 
+## Overview
+
+In cryptographic library implementations we care about how much information gets leaked when certain procedure ( say key generation of public key encryption (PKE) or message signing using some digital signature algorithm (DSA) ) is executed in some environment. Based on what that specific environment is, various sorts of observation tactics an adversary can deploy for collecting leaked information, which can result in partial to full recovery of secrets. We would like to write implementations which leaks as little information as possible i.e. it should not be dependent on some secret input what intructions to be executed next or which memory addresses to be accessed ( because it can result in cache miss and that increases latency, which can be measured ) or what's the latency of some instruction ( say integer division ) operated on some secret input etc..
+
+> **Note** Read more about need for constant-time implementations @ https://www.bearssl.org/constanttime.html.
+
+Remember we're mostly writing programs in some higher level programming language ( say C++ ) which is passed through the compiler for producing final executable and the compiler is free to transform it to something totally different ( may be something that we're actually trying to avoid using constant-time implementation - that's the whole point ! ) as long as it produces intended side-effect. So constant-timeness is not trivial. Read more @ https://www.chosenplaintext.ca/articles/beginners-guide-constant-time-cryptography.html.
+
+Just so that I don't need to write same boilerplate code again and again for achieving constant-timeness, I maintain this light-weight, header-only, generic C++ library which offers following functionalities
+
+- constant-time comparison operations
+- constant-time conditional selection
+- constant-time conditional swapping
+
+over 8, 16, 32 and 64 -bit unsigned integer type. This is a best effort mechanism to achieve constant-timeness and it's not guaranteed that if you also use this, your cryptographic implementation becomes constant-time. It's always good idea to target some specific architecture, compile with debug info and then disassemble object file ( with interleaved source, yes we can do it, because we've debug info ) to inspect what did the compiler do, more [here](#usage).
+
+> **Note** This library collects motivation from both https://github.com/dalek-cryptography/subtle and https://github.com/golang/go/blob/ddb423a7/src/crypto/subtle/constant_time.go.
+
 ## Prerequisites
 
 - A C++ compiler such as `g++`/ `clang++` with C++20 standard library
@@ -37,6 +55,15 @@ implemented in this C++ library, over unsigned integer types of 8, 16, 32 and 64
 
 ```bash
 make
+
+[test] Equality test
+[test] Inequality test
+[test] Conditional selection test
+[test] Conditional swap test
+[test] Lesser than equality test
+[test] Greater than test
+[test] Greater than equality test
+[test] Lesser than test
 ```
 
 ## Benchmarking
@@ -149,7 +176,7 @@ std::cin >> b;
 const bool flg = a == b;
 ```
 
-Which is perfectly fine, but in constant-time implementation, we can avoid using relational operators and only rely on arithmetic operations and bit-wise operations. We can write
+Which is perfectly fine, but in constant-time implementation, we want to avoid using relational operators ( resulting in boolean value ) and only rely on integer addition, subtraction and bit-wise operations. It's because whenever booleans are involved there is high chance that it can be transformed into some conditional jump, which can result in instruction cache miss and it can be measured. While if we can only rely on constant-time instructions ( say integer addition, subtraction or bit-wise operations etc. ) all the intructions will be executed in order and final result will be acccumulated as some integer value and hopefully compiler won't be able to optimize it away. We can write
 
 ```cpp
 const uint8_t flg = subtle::ct_eq<uint8_t, uint8_t>(a, b);
@@ -162,7 +189,7 @@ Constant-time implementation becomes more practical and interesting, when say we
 - Don't decide which code path to take ( ofcourse in runtime ) based on contents of byte arrays $a$ or $b$.
 - Don't decide which memory addresses to access based on contents of byte arrays $a$ or $b$.
 
-That's because these two byte arrays are holding secret data. If we do any of above mentioned things, during the comparison, then it can leak some information about content of those byte arrays to some adversary who might be interested in them. There are various possible ways to collect these sort of informations in various different execution environments.
+That's because these two byte arrays are holding secret data. If we do any of above mentioned things, during the comparison, then it can leak some information about content of those byte arrays to some adversary who might be observing that. There are various possible ways to collect these sort of informations in various different execution environments.
 
 So we can write
 
@@ -197,9 +224,9 @@ for(size_t i = 0; i < 16; i++) {
 const bool is_a_match = !flg;
 ```
 
-Now we're doing it better, because it doesn't matter what the content of those two bytearrays are, we always execute same set to instructions.
+Now we're doing it better, because it doesn't matter what the content of those two byte arrays are, we always execute same set to instructions.
 
-Now $flg$, in above code snippet, is a secret boolean, because it holds accumuluated result of comparison of two secret bytearrays $a$, $b$.
+Now $flg$, in above code snippet, is a secret boolean, because it holds accumulated result of comparison of two secret bytearrays $a$, $b$.
 
 Now we write following, using $flg$
 
@@ -252,5 +279,3 @@ For more examples, try going through [test cases](./include/test_subtle.hpp).
 ---
 
 A note on `subtle` - almost all of the functions are `constexpr` i.e. we get to enjoy some compile-time computation benefits. It may not be very helpful for real-world cryptographic use cases, but can help in writing `static_assert` based test cases.
-
----

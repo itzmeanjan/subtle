@@ -9,15 +9,9 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Setup Compiler
-      run: |
-        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 10
-        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 9
-    - name: Execute Tests
-      run: make
-    - name: Cleanup
-      run: make clean
+    - uses: actions/checkout@v5
+    - name: Run tests
+      run: make all clean

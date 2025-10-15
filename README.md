@@ -5,7 +5,7 @@ Constant-Time Comparison, Conditional Selection and Swapping of Unsigned Integer
 
 In cryptographic library implementations we care about how much information gets leaked when certain procedure ( say key generation of public key encryption (PKE) or message signing using some digital signature algorithm (DSA) ) is executed in some environment. Based on what that specific environment is, various sorts of observation tactics an adversary can deploy for collecting leaked information, which can result in partial to full recovery of secrets. We would like to write implementations which leaks as little information ( regarding secrets in our implementation ) as possible i.e. it should not be dependent on some secret input
 
-- What intructions to be executed next, because different instructions have different latencies and it can also fail CPU branch predictor resulting in pretty expensive rewinding - and it can be observed and measured.
+- What instructions to be executed next, because different instructions have different latencies and it can also fail CPU branch predictor resulting in pretty expensive rewinding - and it can be observed and measured.
 - Or which memory addresses to be accessed, because it can result in cache miss and that increases latency, which can also be observed and measured.
 - Or what the latency of some instruction ( say integer division ) is.
 

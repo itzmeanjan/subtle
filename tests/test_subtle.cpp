@@ -30,6 +30,7 @@ TYPED_TEST(CtEqTest, Correctness)
 {
   using operandT = typename TypeParam::first_type;
   using returnT = typename TypeParam::second_type;
+
   test_subtle::test_ct_eq<operandT, returnT>();
 }
 
@@ -45,6 +46,7 @@ TYPED_TEST(CtNeTest, Correctness)
 {
   using operandT = typename TypeParam::first_type;
   using returnT = typename TypeParam::second_type;
+
   test_subtle::test_ct_ne<operandT, returnT>();
 }
 
@@ -60,22 +62,56 @@ TYPED_TEST(CtSelectTest, Correctness)
 {
   using operandT = typename TypeParam::first_type;
   using returnT = typename TypeParam::second_type;
+
   test_subtle::test_ct_select<operandT, returnT>();
 }
 
-// --- ct_swap tests ---
+// --- ct_swap_truth tests ---
 
 template<typename T>
-class CtSwapTest : public ::testing::Test
+class CtSwapTruthTest : public ::testing::Test
 {};
 
-TYPED_TEST_SUITE(CtSwapTest, TypeCombinations);
+TYPED_TEST_SUITE(CtSwapTruthTest, TypeCombinations);
 
-TYPED_TEST(CtSwapTest, Correctness)
+TYPED_TEST(CtSwapTruthTest, Correctness)
 {
   using operandT = typename TypeParam::first_type;
   using returnT = typename TypeParam::second_type;
-  test_subtle::test_ct_swap<operandT, returnT>();
+
+  test_subtle::test_ct_swap_truth<operandT, returnT>();
+}
+
+// --- ct_swap_roundtrip tests ---
+
+template<typename T>
+class CtSwapRoundtripTest : public ::testing::Test
+{};
+
+TYPED_TEST_SUITE(CtSwapRoundtripTest, TypeCombinations);
+
+TYPED_TEST(CtSwapRoundtripTest, Correctness)
+{
+  using operandT = typename TypeParam::first_type;
+  using returnT = typename TypeParam::second_type;
+
+  test_subtle::test_ct_swap_roundtrip<operandT, returnT>();
+}
+
+// --- ct_swap_false tests ---
+
+template<typename T>
+class CtSwapFalseTest : public ::testing::Test
+{};
+
+TYPED_TEST_SUITE(CtSwapFalseTest, TypeCombinations);
+
+TYPED_TEST(CtSwapFalseTest, Correctness)
+{
+  using operandT = typename TypeParam::first_type;
+  using returnT = typename TypeParam::second_type;
+
+  test_subtle::test_ct_swap_false<operandT, returnT>();
 }
 
 // --- ct_le tests ---
@@ -90,6 +126,7 @@ TYPED_TEST(CtLeTest, Correctness)
 {
   using operandT = typename TypeParam::first_type;
   using returnT = typename TypeParam::second_type;
+
   test_subtle::test_ct_le<operandT, returnT>();
 }
 
@@ -105,6 +142,7 @@ TYPED_TEST(CtGtTest, Correctness)
 {
   using operandT = typename TypeParam::first_type;
   using returnT = typename TypeParam::second_type;
+
   test_subtle::test_ct_gt<operandT, returnT>();
 }
 
@@ -120,6 +158,7 @@ TYPED_TEST(CtGeTest, Correctness)
 {
   using operandT = typename TypeParam::first_type;
   using returnT = typename TypeParam::second_type;
+
   test_subtle::test_ct_ge<operandT, returnT>();
 }
 
@@ -135,5 +174,6 @@ TYPED_TEST(CtLtTest, Correctness)
 {
   using operandT = typename TypeParam::first_type;
   using returnT = typename TypeParam::second_type;
+
   test_subtle::test_ct_lt<operandT, returnT>();
 }

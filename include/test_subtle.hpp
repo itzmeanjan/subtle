@@ -9,9 +9,7 @@ namespace test_subtle {
 
 // Test functional correctness of constant-time equality operation over unsigned
 // integer types, checking result against native comparison operator ( i.e. == )
-template<typename operandT,
-         typename returnT,
-         const size_t iterations = (1ul << 16)>
+template<typename operandT, typename returnT, const size_t iterations = (1ul << 16)>
 void
 test_ct_eq()
   requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
@@ -37,9 +35,7 @@ test_ct_eq()
 
 // Test functional correctness of constant-time inequality operation over
 // unsigned integer types, checking result against native comparison operator
-template<typename operandT,
-         typename returnT,
-         const size_t iterations = (1ul << 16)>
+template<typename operandT, typename returnT, const size_t iterations = (1ul << 16)>
 void
 test_ct_ne()
   requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
@@ -62,9 +58,7 @@ test_ct_ne()
 
 // Test functional correctness of constant-time conditional selection operation
 // over unsigned integer types.
-template<typename operandT,
-         typename returnT,
-         const size_t iterations = (1ul << 16)>
+template<typename operandT, typename returnT, const size_t iterations = (1ul << 16)>
 void
 test_ct_select()
   requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
@@ -87,9 +81,7 @@ test_ct_select()
 
 // Test functional correctness of constant-time conditional swap operation over
 // unsigned integer types.
-template<typename operandT,
-         typename returnT,
-         const size_t iterations = (1ul << 16)>
+template<typename operandT, typename returnT, const size_t iterations = (1ul << 16)>
 void
 test_ct_swap()
   requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
@@ -128,9 +120,7 @@ test_ct_swap()
 
 // Test functional correctness of constant-time lesser than equality operation
 // over unsigned integer types, checking result against native comparison op.
-template<typename operandT,
-         typename returnT,
-         const size_t iterations = (1ul << 16)>
+template<typename operandT, typename returnT, const size_t iterations = (1ul << 16)>
 void
 test_ct_le()
   requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
@@ -156,9 +146,7 @@ test_ct_le()
 
 // Test functional correctness of constant-time greater than operation over
 // unsigned integer types, checking result against native comparison operator.
-template<typename operandT,
-         typename returnT,
-         const size_t iterations = (1ul << 16)>
+template<typename operandT, typename returnT, const size_t iterations = (1ul << 16)>
 void
 test_ct_gt()
   requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
@@ -181,9 +169,7 @@ test_ct_gt()
 
 // Test functional correctness of constant-time greater than equality operation
 // over unsigned integer types, checking result against native comparison op.
-template<typename operandT,
-         typename returnT,
-         const size_t iterations = (1ul << 16)>
+template<typename operandT, typename returnT, const size_t iterations = (1ul << 16)>
 void
 test_ct_ge()
   requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
@@ -209,9 +195,7 @@ test_ct_ge()
 
 // Test functional correctness of constant-time lesser than operation over
 // unsigned integer types, checking result against native comparison operation.
-template<typename operandT,
-         typename returnT,
-         const size_t iterations = (1ul << 16)>
+template<typename operandT, typename returnT, const size_t iterations = (1ul << 16)>
 void
 test_ct_lt()
   requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)

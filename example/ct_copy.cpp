@@ -44,11 +44,7 @@ gen_rand_data(uint8_t* const data, const size_t dlen)
 // Truth value is denoted by all bits of uint32_t set to 1, while false value is
 // denoted by all bits of uint32_t set to 0.
 uint32_t
-ct_copy(const uint32_t br,
-        const uint8_t* const __restrict src,
-        const size_t src_len,
-        uint8_t* const __restrict dst,
-        const size_t dst_len)
+ct_copy(const uint32_t br, const uint8_t* const __restrict src, const size_t src_len, uint8_t* const __restrict dst, const size_t dst_len)
 {
   // This shouldn't affect constant-timeness, because we're not inpecting
   // content of source byte array.

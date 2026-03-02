@@ -44,10 +44,7 @@ gen_rand_data(uint8_t* const data, const size_t dlen)
 // denoted by all bits of uint32_t set to 1 ), otherwise it return false (
 // denoted by all bits of uint32_t set to 0 ).
 uint32_t
-ct_compare(const uint8_t* const __restrict tag_a,
-           const size_t tag_a_len,
-           const uint8_t* const __restrict tag_b,
-           const size_t tag_b_len)
+ct_compare(const uint8_t* const __restrict tag_a, const size_t tag_a_len, const uint8_t* const __restrict tag_b, const size_t tag_b_len)
 {
   // This is a comparison of length, not content of byte array.
   if (tag_a_len != tag_b_len) {

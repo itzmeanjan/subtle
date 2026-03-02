@@ -1,4 +1,4 @@
-#include "bench_subtle.hpp"
+#include "bench_helper.hpp"
 
 BENCHMARK(bench_subtle::ct_eq<uint8_t>);
 BENCHMARK(bench_subtle::native_eq<uint8_t>);

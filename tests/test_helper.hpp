@@ -1,6 +1,6 @@
 #pragma once
 #include "subtle.hpp"
-#include <cassert>
+#include <gtest/gtest.h>
 #include <random>
 
 // Test cases for ensuring functional correctness of constant-time comparison
@@ -14,7 +14,7 @@ void
 test_ct_eq()
   requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
 {
-  constexpr returnT truthv = -static_cast<returnT>(1);
+  constexpr returnT truthv = static_cast<returnT>(~returnT{ 0 });
   constexpr returnT falsev = 0;
 
   std::random_device rd;
@@ -27,9 +27,9 @@ test_ct_eq()
 
     const returnT z = subtle::ct_eq<operandT, returnT>(x, y);
 
-    assert(z == (x == y ? truthv : falsev));
-    assert(truthv == (subtle::ct_eq<operandT, returnT>(x, x)));
-    assert(truthv == (subtle::ct_eq<operandT, returnT>(y, y)));
+    ASSERT_EQ(z, (x == y ? truthv : falsev));
+    ASSERT_EQ(truthv, (subtle::ct_eq<operandT, returnT>(x, x)));
+    ASSERT_EQ(truthv, (subtle::ct_eq<operandT, returnT>(y, y)));
   }
 }
 
@@ -40,7 +40,7 @@ void
 test_ct_ne()
   requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
 {
-  constexpr returnT truthv = -static_cast<returnT>(1);
+  constexpr returnT truthv = static_cast<returnT>(~returnT{ 0 });
   constexpr returnT falsev = 0;
 
   std::random_device rd;
@@ -52,7 +52,7 @@ test_ct_ne()
     const operandT y = dis(gen);
 
     const returnT z = subtle::ct_ne<operandT, returnT>(x, y);
-    assert(z == (x != y ? truthv : falsev));
+    ASSERT_EQ(z, (x != y ? truthv : falsev));
   }
 }
 
@@ -63,7 +63,7 @@ void
 test_ct_select()
   requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
 {
-  constexpr returnT truthv = -static_cast<returnT>(1);
+  constexpr returnT truthv = static_cast<returnT>(~returnT{ 0 });
   constexpr returnT falsev = 0;
 
   std::random_device rd;
@@ -74,8 +74,8 @@ test_ct_select()
     const operandT x = dis(gen);
     const operandT y = dis(gen);
 
-    assert(x == (subtle::ct_select(truthv, x, y)));
-    assert(y == (subtle::ct_select(falsev, x, y)));
+    ASSERT_EQ(x, (subtle::ct_select(truthv, x, y)));
+    ASSERT_EQ(y, (subtle::ct_select(falsev, x, y)));
   }
 }
 
@@ -86,7 +86,7 @@ void
 test_ct_swap()
   requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
 {
-  constexpr returnT truthv = -static_cast<returnT>(1);
+  constexpr returnT truthv = static_cast<returnT>(~returnT{ 0 });
   constexpr returnT falsev = 0;
 
   std::random_device rd;
@@ -103,18 +103,18 @@ test_ct_swap()
 
     subtle::ct_swap(truthv, x, y); // x, y = y, x
 
-    assert(tmpx == y);
-    assert(tmpy == x);
+    ASSERT_EQ(tmpx, y);
+    ASSERT_EQ(tmpy, x);
 
     subtle::ct_swap(truthv, x, y); // x, y = y, x
 
-    assert(tmpx == x);
-    assert(tmpy == y);
+    ASSERT_EQ(tmpx, x);
+    ASSERT_EQ(tmpy, y);
 
     subtle::ct_swap(falsev, x, y); // x, y = x, y
 
-    assert(tmpx == x);
-    assert(tmpy == y);
+    ASSERT_EQ(tmpx, x);
+    ASSERT_EQ(tmpy, y);
   }
 }
 
@@ -125,7 +125,7 @@ void
 test_ct_le()
   requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
 {
-  constexpr returnT truthv = -static_cast<returnT>(1);
+  constexpr returnT truthv = static_cast<returnT>(~returnT{ 0 });
   constexpr returnT falsev = 0;
 
   std::random_device rd;
@@ -138,9 +138,9 @@ test_ct_le()
 
     const returnT z = subtle::ct_le<operandT, returnT>(x, y);
 
-    assert(z == (x <= y ? truthv : falsev));
-    assert(truthv == (subtle::ct_le<operandT, returnT>(x, x)));
-    assert(truthv == (subtle::ct_le<operandT, returnT>(y, y)));
+    ASSERT_EQ(z, (x <= y ? truthv : falsev));
+    ASSERT_EQ(truthv, (subtle::ct_le<operandT, returnT>(x, x)));
+    ASSERT_EQ(truthv, (subtle::ct_le<operandT, returnT>(y, y)));
   }
 }
 
@@ -151,7 +151,7 @@ void
 test_ct_gt()
   requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
 {
-  constexpr returnT truthv = -static_cast<returnT>(1);
+  constexpr returnT truthv = static_cast<returnT>(~returnT{ 0 });
   constexpr returnT falsev = 0;
 
   std::random_device rd;
@@ -163,7 +163,7 @@ test_ct_gt()
     const operandT y = dis(gen);
 
     const returnT z = subtle::ct_gt<operandT, returnT>(x, y);
-    assert(z == (x > y ? truthv : falsev));
+    ASSERT_EQ(z, (x > y ? truthv : falsev));
   }
 }
 
@@ -174,7 +174,7 @@ void
 test_ct_ge()
   requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
 {
-  constexpr returnT truthv = -static_cast<returnT>(1);
+  constexpr returnT truthv = static_cast<returnT>(~returnT{ 0 });
   constexpr returnT falsev = 0;
 
   std::random_device rd;
@@ -187,9 +187,9 @@ test_ct_ge()
 
     const returnT z = subtle::ct_ge<operandT, returnT>(x, y);
 
-    assert(z == (x >= y ? truthv : falsev));
-    assert(truthv == (subtle::ct_ge<operandT, returnT>(x, x)));
-    assert(truthv == (subtle::ct_ge<operandT, returnT>(y, y)));
+    ASSERT_EQ(z, (x >= y ? truthv : falsev));
+    ASSERT_EQ(truthv, (subtle::ct_ge<operandT, returnT>(x, x)));
+    ASSERT_EQ(truthv, (subtle::ct_ge<operandT, returnT>(y, y)));
   }
 }
 
@@ -200,7 +200,7 @@ void
 test_ct_lt()
   requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
 {
-  constexpr returnT truthv = -static_cast<returnT>(1);
+  constexpr returnT truthv = static_cast<returnT>(~returnT{ 0 });
   constexpr returnT falsev = 0;
 
   std::random_device rd;
@@ -212,7 +212,7 @@ test_ct_lt()
     const operandT y = dis(gen);
 
     const returnT z = subtle::ct_lt<operandT, returnT>(x, y);
-    assert(z == (x < y ? truthv : falsev));
+    ASSERT_EQ(z, (x < y ? truthv : falsev));
   }
 }
 

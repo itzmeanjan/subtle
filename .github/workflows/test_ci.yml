@@ -1,4 +1,4 @@
-name: Test Subtle using CI
+name: Test Subtle
 
 on:
   push:

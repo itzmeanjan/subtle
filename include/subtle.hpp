@@ -3,8 +3,37 @@
 #include <cstddef>
 #include <type_traits>
 
+// MSan detection: the "+r" asm constraint reads the value, which triggers
+// false positives on poisoned (secret) inputs. MSan operates at LLVM IR
+// level (before backend optimizations), so the barrier is unnecessary.
+#ifdef __has_feature
+#if __has_feature(memory_sanitizer)
+#define SUBTLE_MSAN_ACTIVE_
+#endif
+#endif
+
 // Constant-time comparison and selection of unsigned integer values.
 namespace subtle {
+
+// Optimization barrier: prevents the compiler from reasoning about `val`,
+// blocking pattern recognition that would restructure constant-time code into branches
+// or secret-dependent memory accesses. Generates zero machine instructions.
+template<typename T>
+forceinline constexpr void
+ct_barrier([[maybe_unused]] T& val)
+  requires(std::is_unsigned_v<T>)
+{
+#if !defined(SUBTLE_MSAN_ACTIVE_)
+  if (!std::is_constant_evaluated()) {
+#if defined(_MSC_VER)
+    volatile T* vp = &val;
+    val = *vp;
+#else
+    asm volatile("" : "+r"(val)); // NOLINT(hicpp-no-assembler)
+#endif
+  }
+#endif
+}
 
 // Given two unsigned integers x, y of type operandT ( of bitwidth 8, 16, 32 or
 // 64 ), this routine returns true ( if x == y ) or false ( in case x != y )
@@ -18,7 +47,9 @@ forceinline constexpr returnT
 ct_eq(const operandT x, const operandT y)
   requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
 {
-  const operandT a = x ^ y;
+  operandT a = x ^ y;
+  ct_barrier(a);
+
   const operandT b = static_cast<operandT>(a | static_cast<operandT>(-a));
   const operandT c = b >> ((sizeof(operandT) * 8) - 1); // select only MSB
   const returnT d = static_cast<returnT>(c);
@@ -58,8 +89,9 @@ forceinline constexpr operandT
 ct_select(const branchT br, const operandT x, const operandT y)
   requires(std::is_unsigned_v<branchT> && std::is_unsigned_v<operandT>)
 {
-  const branchT z = br >> ((sizeof(branchT) * 8) - 1);                                                             // select MSB
-  const operandT w = -static_cast<operandT>(z);                                                                    // bw(br) = bw(x) = bw(y)
+  const branchT z = br >> ((sizeof(branchT) * 8) - 1); // select MSB
+  operandT w = -static_cast<operandT>(z);              // bw(br) = bw(x) = bw(y)
+  ct_barrier(w);
   const operandT selected = static_cast<operandT>((x & w) | static_cast<operandT>(y & static_cast<operandT>(~w))); // br ? x : y
 
   return selected;
@@ -77,7 +109,8 @@ forceinline constexpr void
 ct_swap(const branchT br, operandT& x, operandT& y)
   requires(std::is_unsigned_v<branchT> && std::is_unsigned_v<operandT>)
 {
-  const operandT mask = static_cast<operandT>(-static_cast<operandT>(br & 1));
+  operandT mask = static_cast<operandT>(-static_cast<operandT>(br & 1));
+  ct_barrier(mask);
 
   x = static_cast<operandT>(x ^ static_cast<operandT>(mask & y));
   y = static_cast<operandT>(y ^ static_cast<operandT>(mask & x));
@@ -118,6 +151,7 @@ ct_le(const operandT x, const operandT y)
     pow += pow;
   }
 
+  ct_barrier(bit);
   const returnT z = static_cast<returnT>(-static_cast<returnT>((bit & 1) ^ 1));
   return z;
 }

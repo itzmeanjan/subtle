@@ -44,7 +44,7 @@ jobs:
           ubuntu-latest # x86_64
         ]
         compiler: [g++, clang++]
-        sanitizer: [none, asan, ubsan]
+        sanitizer: [none, asan, ubsan, msan]
         build_type: [Debug, Release]
         include:
           - os: macos-latest # aarch64
@@ -54,9 +54,15 @@ jobs:
         exclude:
           - sanitizer: none
             build_type: Debug
+          - compiler: g++
+            sanitizer: msan
 
     steps:
       - uses: actions/checkout@v6
+
+      - name: Install libc++ (MSan requires instrumented C++ stdlib)
+        if: ${{ matrix.sanitizer == 'msan' }}
+        run: sudo apt-get update && sudo apt-get install -y libc++-dev libc++abi-dev
 
       - name: Configure
         run: >
@@ -68,6 +74,7 @@ jobs:
           -DSUBTLE_FETCH_DEPS=ON
           -DSUBTLE_ASAN=${{ matrix.sanitizer == 'asan' && 'ON' || 'OFF' }}
           -DSUBTLE_UBSAN=${{ matrix.sanitizer == 'ubsan' && 'ON' || 'OFF' }}
+          -DSUBTLE_MSAN=${{ matrix.sanitizer == 'msan' && 'ON' || 'OFF' }}
 
       - name: Build
         run: cmake --build build -j

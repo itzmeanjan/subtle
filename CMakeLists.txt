@@ -16,6 +16,7 @@ if(PROJECT_IS_TOP_LEVEL)
   option(SUBTLE_NATIVE_OPT "Enable -march=native (not suitable for cross-compilation)" OFF)
   option(SUBTLE_ASAN "Enable AddressSanitizer" OFF)
   option(SUBTLE_UBSAN "Enable UndefinedBehaviorSanitizer" OFF)
+  option(SUBTLE_MSAN "Enable MemorySanitizer (Clang only, for constant-time verification)" OFF)
 
   # --- Tools ---
   find_program(CLANG_TIDY_EXE clang-tidy)
@@ -74,6 +75,11 @@ if(PROJECT_IS_TOP_LEVEL)
     add_link_options(-fsanitize=undefined)
   endif()
 
+  if(SUBTLE_MSAN)
+    add_compile_options(-fsanitize=memory -fno-omit-frame-pointer -fno-optimize-sibling-calls -stdlib=libc++)
+    add_link_options(-fsanitize=memory -stdlib=libc++)
+  endif()
+
   # --- Native Optimization ---
   if(SUBTLE_NATIVE_OPT)
     add_compile_options(-march=native)
@@ -103,30 +109,39 @@ target_compile_features(subtle INTERFACE cxx_std_20)
 # --- Tests ---
 if(SUBTLE_BUILD_TESTS)
   enable_testing()
-  if(SUBTLE_FETCH_DEPS)
-    message(STATUS "Fetching GTest...")
-    include(FetchContent)
-    FetchContent_Declare(
-      googletest
-      URL https://github.com/google/googletest/archive/refs/tags/v1.17.0.zip
-      DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-    )
-    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-    set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
-    FetchContent_MakeAvailable(googletest)
+
+  if(SUBTLE_MSAN)
+    # Constant-time verification tests (standalone binary, no GTest).
+    # MSan's abort-on-violation is the assertion mechanism.
+    add_executable(subtle_ct_tests tests/test_ct.cpp)
+    target_link_libraries(subtle_ct_tests PRIVATE subtle)
+    target_compile_options(subtle_ct_tests PRIVATE ${SUBTLE_WARNING_FLAGS})
+    add_test(NAME subtle_ct_tests COMMAND subtle_ct_tests)
   else()
-    find_package(GTest REQUIRED)
+    # Correctness tests (GTest) -- skipped under MSan (RTTI incompatibility)
+    if(SUBTLE_FETCH_DEPS)
+      message(STATUS "Fetching GTest...")
+      include(FetchContent)
+      FetchContent_Declare(
+        googletest
+        URL https://github.com/google/googletest/archive/refs/tags/v1.17.0.zip
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+      )
+      set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+      set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+      FetchContent_MakeAvailable(googletest)
+    else()
+      find_package(GTest REQUIRED)
+    endif()
+
+    add_executable(subtle_tests tests/test_subtle.cpp)
+    target_link_libraries(subtle_tests PRIVATE subtle GTest::gtest_main)
+    target_include_directories(subtle_tests PRIVATE tests)
+    target_compile_options(subtle_tests PRIVATE ${SUBTLE_WARNING_FLAGS})
+
+    include(GoogleTest)
+    gtest_discover_tests(subtle_tests)
   endif()
-
-  file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS "tests/*.cpp")
-
-  add_executable(subtle_tests ${TEST_SOURCES})
-  target_link_libraries(subtle_tests PRIVATE subtle GTest::gtest_main)
-  target_include_directories(subtle_tests PRIVATE tests)
-  target_compile_options(subtle_tests PRIVATE ${SUBTLE_WARNING_FLAGS})
-
-  include(GoogleTest)
-  gtest_discover_tests(subtle_tests)
 endif()
 
 # --- Benchmarks ---

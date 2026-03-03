@@ -35,6 +35,9 @@
 .vscode
 __pycache__
 
+# CMake
+build/
+
 # For Clangd
 compile_commands.json
 .cache

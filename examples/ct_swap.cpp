@@ -1,4 +1,5 @@
 #include "subtle.hpp"
+#include <cstdint>
 #include <iostream>
 #include <random>
 
@@ -6,15 +7,6 @@
 // ( say a, b of type uint64_t ), based on value held in a conditional variable
 // br. This conditional variable represents truth value using all bits set to 1
 // and false value using all bits set to 0.
-//
-// Compile and run using
-//
-// g++ -std=c++20 -Wall -O3 -march=native -I include/ example/ct_swap.cpp
-//
-// For checking what code is generated for conditional swap function, issue
-//
-// g++ -std=c++20 -Wall -O3 -march=native -I include/ -g3 -c example/ct_swap.cpp
-// objdump -dwCS -Mintel ct_swap.o
 
 int
 main()
@@ -29,11 +21,11 @@ main()
 
   // generate random branch condition, based on that it'll be decided whether to
   // swap values of a, b or not
-  const uint32_t br = -static_cast<uint32_t>(dis(gen) & 1);
+  const uint32_t br = -static_cast<uint32_t>(dis(gen) & 1U);
 
-  std::cout << br << "\t" << a << ", " << b << "\n";
+  std::cout << br << "\t" << a << ", " << b << '\n';
   subtle::ct_swap(br, a, b);
-  std::cout << br << "\t" << a << ", " << b << "\n";
+  std::cout << br << "\t" << a << ", " << b << '\n';
 
   return 0;
 }

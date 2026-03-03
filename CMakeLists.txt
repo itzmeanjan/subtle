@@ -17,6 +17,7 @@ if(PROJECT_IS_TOP_LEVEL)
   option(SUBTLE_ASAN "Enable AddressSanitizer" OFF)
   option(SUBTLE_UBSAN "Enable UndefinedBehaviorSanitizer" OFF)
   option(SUBTLE_MSAN "Enable MemorySanitizer (Clang only, for constant-time verification)" OFF)
+  option(SUBTLE_VALGRIND "Enable Valgrind constant-time verification (Linux only)" OFF)
 
   # --- Tools ---
   find_program(CLANG_TIDY_EXE clang-tidy)
@@ -110,15 +111,22 @@ target_compile_features(subtle INTERFACE cxx_std_20)
 if(SUBTLE_BUILD_TESTS)
   enable_testing()
 
-  if(SUBTLE_MSAN)
-    # Constant-time verification tests (standalone binary, no GTest).
-    # MSan's abort-on-violation is the assertion mechanism.
+  if(SUBTLE_MSAN OR SUBTLE_VALGRIND)
+    # Constant-time verification tests (MSan or Valgrind)
     add_executable(subtle_ct_tests tests/test_ct.cpp)
     target_link_libraries(subtle_ct_tests PRIVATE subtle)
     target_compile_options(subtle_ct_tests PRIVATE ${SUBTLE_WARNING_FLAGS})
-    add_test(NAME subtle_ct_tests COMMAND subtle_ct_tests)
+
+    if(SUBTLE_MSAN)
+      add_test(NAME subtle_ct_tests COMMAND subtle_ct_tests)
+    else()
+      find_program(VALGRIND_EXE valgrind REQUIRED)
+      add_test(NAME subtle_ct_tests
+        COMMAND ${VALGRIND_EXE} --tool=memcheck --error-exitcode=1
+                --track-origins=yes $<TARGET_FILE:subtle_ct_tests>)
+    endif()
   else()
-    # Correctness tests (GTest) -- skipped under MSan (RTTI incompatibility)
+    # Correctness tests (GTest) -- skipped under CT verification modes
     if(SUBTLE_FETCH_DEPS)
       message(STATUS "Fetching GTest...")
       include(FetchContent)

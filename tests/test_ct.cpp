@@ -3,17 +3,32 @@
 #include <cstdio>
 #include <cstdlib>
 #include <random>
-#include <sanitizer/msan_interface.h>
 
-// Constant-time verification using Clang MemorySanitizer.
+// Constant-time verification via uninitialized-memory taint tracking.
 //
-// Technique: mark inputs as "uninitialized" (secret) via MSan, then call the
-// function under test. If the function branches on secret data or uses it to
-// compute a memory address, MSan aborts with a use-of-uninitialized-value
-// error. Clean exit (return 0) means all functions are constant-time.
+// Two backends:
 //
-// No test framework -- MSan's abort-on-violation IS the assertion mechanism.
-// This avoids GTest + MSan incompatibilities (RTTI, getenv, glibc false positives).
+// 1) Clang MemorySanitizer (compile-time instrumentation)
+// 2) Valgrind memcheck (runtime binary instrumentation).
+//
+// Both use the same technique: mark inputs as "uninitialized" (secret),
+// then call the function under test. If it branches on secret data or
+// uses it to compute a memory address, the tool aborts. Clean exit (return 0)
+// means constant-time.
+//
+// No test framework -- the tool's abort-on-violation is the assertion mechanism.
+
+#if defined(__has_feature) && __has_feature(memory_sanitizer)
+#include <sanitizer/msan_interface.h>
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define CT_POISON(addr, len) __msan_allocated_memory(addr, len)
+#define CT_BACKEND_NAME "MSan"
+#else
+#include <valgrind/memcheck.h>
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define CT_POISON(addr, len) VALGRIND_MAKE_MEM_UNDEFINED(addr, len)
+#define CT_BACKEND_NAME "Valgrind"
+#endif
 
 namespace {
 
@@ -33,8 +48,8 @@ verify_ct_eq()
     operandT x = dis(gen);
     operandT y = dis(gen);
 
-    __msan_allocated_memory(&x, sizeof(x));
-    __msan_allocated_memory(&y, sizeof(y));
+    CT_POISON(&x, sizeof(x));
+    CT_POISON(&y, sizeof(y));
 
     volatile returnT sink = subtle::ct_eq<operandT, returnT>(x, y);
     static_cast<void>(sink);
@@ -53,8 +68,8 @@ verify_ct_ne()
     operandT x = dis(gen);
     operandT y = dis(gen);
 
-    __msan_allocated_memory(&x, sizeof(x));
-    __msan_allocated_memory(&y, sizeof(y));
+    CT_POISON(&x, sizeof(x));
+    CT_POISON(&y, sizeof(y));
 
     volatile returnT sink = subtle::ct_ne<operandT, returnT>(x, y);
     static_cast<void>(sink);
@@ -73,8 +88,8 @@ verify_ct_le()
     operandT x = dis(gen);
     operandT y = dis(gen);
 
-    __msan_allocated_memory(&x, sizeof(x));
-    __msan_allocated_memory(&y, sizeof(y));
+    CT_POISON(&x, sizeof(x));
+    CT_POISON(&y, sizeof(y));
 
     volatile returnT sink = subtle::ct_le<operandT, returnT>(x, y);
     static_cast<void>(sink);
@@ -93,8 +108,8 @@ verify_ct_gt()
     operandT x = dis(gen);
     operandT y = dis(gen);
 
-    __msan_allocated_memory(&x, sizeof(x));
-    __msan_allocated_memory(&y, sizeof(y));
+    CT_POISON(&x, sizeof(x));
+    CT_POISON(&y, sizeof(y));
 
     volatile returnT sink = subtle::ct_gt<operandT, returnT>(x, y);
     static_cast<void>(sink);
@@ -113,8 +128,8 @@ verify_ct_ge()
     operandT x = dis(gen);
     operandT y = dis(gen);
 
-    __msan_allocated_memory(&x, sizeof(x));
-    __msan_allocated_memory(&y, sizeof(y));
+    CT_POISON(&x, sizeof(x));
+    CT_POISON(&y, sizeof(y));
 
     volatile returnT sink = subtle::ct_ge<operandT, returnT>(x, y);
     static_cast<void>(sink);
@@ -133,8 +148,8 @@ verify_ct_lt()
     operandT x = dis(gen);
     operandT y = dis(gen);
 
-    __msan_allocated_memory(&x, sizeof(x));
-    __msan_allocated_memory(&y, sizeof(y));
+    CT_POISON(&x, sizeof(x));
+    CT_POISON(&y, sizeof(y));
 
     volatile returnT sink = subtle::ct_lt<operandT, returnT>(x, y);
     static_cast<void>(sink);
@@ -156,9 +171,9 @@ verify_ct_select()
     operandT y = dis(gen);
     returnT br = -static_cast<returnT>(dis(gen) & 1U);
 
-    __msan_allocated_memory(&x, sizeof(x));
-    __msan_allocated_memory(&y, sizeof(y));
-    __msan_allocated_memory(&br, sizeof(br));
+    CT_POISON(&x, sizeof(x));
+    CT_POISON(&y, sizeof(y));
+    CT_POISON(&br, sizeof(br));
 
     volatile operandT sink = subtle::ct_select(br, x, y);
     static_cast<void>(sink);
@@ -180,9 +195,9 @@ verify_ct_swap()
     operandT y = dis(gen);
     returnT br = -static_cast<returnT>(dis(gen) & 1U);
 
-    __msan_allocated_memory(&x, sizeof(x));
-    __msan_allocated_memory(&y, sizeof(y));
-    __msan_allocated_memory(&br, sizeof(br));
+    CT_POISON(&x, sizeof(x));
+    CT_POISON(&y, sizeof(y));
+    CT_POISON(&br, sizeof(br));
 
     subtle::ct_swap(br, x, y);
 
@@ -270,7 +285,7 @@ struct swap_wrapper
 int
 main()
 {
-  std::puts("Running constant-time verification with MSan...");
+  std::puts("Running constant-time verification with " CT_BACKEND_NAME "...");
 
   std::puts("  ct_eq...");
   verify_all_types<eq_wrapper>();

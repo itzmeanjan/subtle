@@ -39,7 +39,7 @@ void
 ct_copy(const uint32_t br, const std::array<uint8_t, DLEN>& src, std::array<uint8_t, DLEN>& dst)
 {
   for (size_t i = 0; i < DLEN; i++) {
-    dst.at(i) = subtle::ct_select<uint32_t, uint8_t>(br, src.at(i), dst.at(i));
+    dst[i] = subtle::ct_select<uint32_t, uint8_t>(br, src[i], dst[i]);
   }
 }
 
@@ -55,7 +55,7 @@ main()
   gen_rand_data(dst);
 
   // random branch value, so that compiler can't do optimization !
-  const uint32_t br = -static_cast<uint32_t>((src.at(0) ^ dst.at(0)) & 1U);
+  const uint32_t br = -static_cast<uint32_t>((src[0] ^ dst[0]) & 1U);
 
   std::cout << br << '\n';
   ct_copy(br, src, dst);

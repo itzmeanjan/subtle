@@ -18,7 +18,13 @@
 //
 // No test framework -- the tool's abort-on-violation is the assertion mechanism.
 
-#if defined(__has_feature) && __has_feature(memory_sanitizer)
+#ifdef __has_feature
+#if __has_feature(memory_sanitizer)
+#define CT_USE_MSAN
+#endif
+#endif
+
+#ifdef CT_USE_MSAN
 #include <sanitizer/msan_interface.h>
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define CT_POISON(addr, len) __msan_allocated_memory(addr, len)

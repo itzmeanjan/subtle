@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # Run Binsec CT verification inside the binsec Docker image.
 #
-# Tests both GCC and Clang in Release mode. Debug builds are excluded
-# because -O0 doesn't inline or optimize bitwise patterns into branchless
-# code, so binsec correctly reports branches that only exist at -O0.
+# Tests both GCC and Clang in Release, RelWithDebInfo, and MinSizeRel.
+# Debug is excluded because -O0 doesn't inline or optimize bitwise patterns
+# into branchless code, so binsec correctly reports branches that only
+# exist at -O0.
 #
-# Usage: ./tests/binsec/run_docker_binsec.sh
+# Usage: ./tests/scripts/run_docker_binsec.sh
 
 set -euo pipefail
 
@@ -14,7 +15,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 COMPILERS=("g++" "clang++")
-BUILD_TYPES=("Release")
+BUILD_TYPES=("Release" "RelWithDebInfo" "MinSizeRel")
 
 OVERALL_PASS=true
 

@@ -114,14 +114,14 @@ if(SUBTLE_BUILD_TESTS)
 
   if(SUBTLE_MSAN)
     # MSan constant-time verification (Clang only)
-    add_executable(subtle_ct_tests tests/test_ct.cpp)
+    add_executable(subtle_ct_tests tests/test_ct_dynamic.cpp)
     target_link_libraries(subtle_ct_tests PRIVATE subtle)
     target_compile_options(subtle_ct_tests PRIVATE ${SUBTLE_WARNING_FLAGS})
     add_test(NAME subtle_ct_tests COMMAND subtle_ct_tests)
 
   elseif(SUBTLE_VALGRIND)
     # Valgrind constant-time verification
-    add_executable(subtle_ct_tests tests/test_ct.cpp)
+    add_executable(subtle_ct_tests tests/test_ct_dynamic.cpp)
     target_link_libraries(subtle_ct_tests PRIVATE subtle)
     target_compile_options(subtle_ct_tests PRIVATE ${SUBTLE_WARNING_FLAGS})
     find_program(VALGRIND_EXE valgrind REQUIRED)
@@ -139,7 +139,7 @@ if(SUBTLE_BUILD_TESTS)
     find_program(BINSEC_EXE binsec)
     if(BINSEC_EXE)
       add_custom_target(binsec_verify
-        COMMAND ${CMAKE_SOURCE_DIR}/tests/binsec/run_binsec.sh
+        COMMAND ${CMAKE_SOURCE_DIR}/tests/scripts/run_binsec.sh
                 ${BINSEC_EXE} $<TARGET_FILE:subtle_ct_binsec>
         DEPENDS subtle_ct_binsec
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}

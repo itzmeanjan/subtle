@@ -38,31 +38,22 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
-      max-parallel: 2
       matrix:
-        os: [
-          ubuntu-latest # x86_64
-        ]
+        os: [ubuntu-latest]
         compiler: [g++, clang++]
-        sanitizer: [none, asan, ubsan, msan]
+        sanitizer: [none, asan, ubsan]
         build_type: [Debug, Release]
         include:
-          - os: macos-latest # aarch64
+          - os: macos-latest
             compiler: clang++
             sanitizer: none
             build_type: Release
         exclude:
           - sanitizer: none
             build_type: Debug
-          - compiler: g++
-            sanitizer: msan
 
     steps:
       - uses: actions/checkout@v6
-
-      - name: Install libc++ (MSan requires instrumented C++ stdlib)
-        if: ${{ matrix.sanitizer == 'msan' }}
-        run: sudo apt-get update && sudo apt-get install -y libc++-dev libc++abi-dev
 
       - name: Configure
         run: >
@@ -74,7 +65,6 @@ jobs:
           -DSUBTLE_FETCH_DEPS=ON
           -DSUBTLE_ASAN=${{ matrix.sanitizer == 'asan' && 'ON' || 'OFF' }}
           -DSUBTLE_UBSAN=${{ matrix.sanitizer == 'ubsan' && 'ON' || 'OFF' }}
-          -DSUBTLE_MSAN=${{ matrix.sanitizer == 'msan' && 'ON' || 'OFF' }}
 
       - name: Build
         run: cmake --build build -j
@@ -83,11 +73,37 @@ jobs:
         run: ctest --test-dir build --output-on-failure -j
 
       - name: Run Examples
-        if: ${{ matrix.sanitizer == 'none' && matrix.build_type == 'Release' }}
+        if: ${{ matrix.sanitizer == 'none' }}
         run: |
           ./build/ct_swap_example
           ./build/ct_compare_example
           ./build/ct_copy_example
+
+  msan:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Debug, Release, RelWithDebInfo, MinSizeRel]
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install libc++
+        run: sudo apt-get update && sudo apt-get install -y libc++-dev libc++abi-dev
+
+      - name: Configure
+        run: >
+          cmake -B build
+          -DCMAKE_CXX_COMPILER=clang++
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DSUBTLE_BUILD_TESTS=ON
+          -DSUBTLE_MSAN=ON
+
+      - name: Build
+        run: cmake --build build -j
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure -j
 
   valgrind:
     runs-on: ubuntu-latest
@@ -95,7 +111,7 @@ jobs:
       fail-fast: false
       matrix:
         compiler: [g++, clang++]
-        build_type: [Debug, Release]
+        build_type: [Debug, Release, RelWithDebInfo, MinSizeRel]
     steps:
       - uses: actions/checkout@v6
 
@@ -124,6 +140,7 @@ jobs:
       fail-fast: false
       matrix:
         compiler: [g++, clang++]
+        build_type: [Release, RelWithDebInfo, MinSizeRel]
     steps:
       - uses: actions/checkout@v6
 
@@ -134,7 +151,7 @@ jobs:
         run: >
           cmake -B build
           -DCMAKE_CXX_COMPILER=${{ matrix.compiler }}
-          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
           -DSUBTLE_BUILD_TESTS=ON
           -DSUBTLE_BINSEC=ON
 

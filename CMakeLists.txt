@@ -18,6 +18,7 @@ if(PROJECT_IS_TOP_LEVEL)
   option(SUBTLE_UBSAN "Enable UndefinedBehaviorSanitizer" OFF)
   option(SUBTLE_MSAN "Enable MemorySanitizer (Clang only, for constant-time verification)" OFF)
   option(SUBTLE_VALGRIND "Enable Valgrind constant-time verification (Linux only)" OFF)
+  option(SUBTLE_BINSEC "Build binary for Binsec constant-time verification" OFF)
 
   # --- Tools ---
   find_program(CLANG_TIDY_EXE clang-tidy)
@@ -111,22 +112,42 @@ target_compile_features(subtle INTERFACE cxx_std_20)
 if(SUBTLE_BUILD_TESTS)
   enable_testing()
 
-  if(SUBTLE_MSAN OR SUBTLE_VALGRIND)
-    # Constant-time verification tests (MSan or Valgrind)
+  if(SUBTLE_MSAN)
+    # MSan constant-time verification (Clang only)
     add_executable(subtle_ct_tests tests/test_ct.cpp)
     target_link_libraries(subtle_ct_tests PRIVATE subtle)
     target_compile_options(subtle_ct_tests PRIVATE ${SUBTLE_WARNING_FLAGS})
+    add_test(NAME subtle_ct_tests COMMAND subtle_ct_tests)
 
-    if(SUBTLE_MSAN)
-      add_test(NAME subtle_ct_tests COMMAND subtle_ct_tests)
-    else()
-      find_program(VALGRIND_EXE valgrind REQUIRED)
-      add_test(NAME subtle_ct_tests
-        COMMAND ${VALGRIND_EXE} --tool=memcheck --error-exitcode=1
-                --track-origins=yes $<TARGET_FILE:subtle_ct_tests>)
+  elseif(SUBTLE_VALGRIND)
+    # Valgrind constant-time verification
+    add_executable(subtle_ct_tests tests/test_ct.cpp)
+    target_link_libraries(subtle_ct_tests PRIVATE subtle)
+    target_compile_options(subtle_ct_tests PRIVATE ${SUBTLE_WARNING_FLAGS})
+    find_program(VALGRIND_EXE valgrind REQUIRED)
+    add_test(NAME subtle_ct_tests
+      COMMAND ${VALGRIND_EXE} --tool=memcheck --error-exitcode=1
+              --track-origins=yes $<TARGET_FILE:subtle_ct_tests>)
+
+  elseif(SUBTLE_BINSEC)
+    # Binsec formal CT verification (binary-level symbolic execution)
+    add_executable(subtle_ct_binsec tests/test_ct_binsec.cpp)
+    target_link_libraries(subtle_ct_binsec PRIVATE subtle)
+    target_compile_options(subtle_ct_binsec PRIVATE -g ${SUBTLE_WARNING_FLAGS})
+    target_link_options(subtle_ct_binsec PRIVATE -static)
+    set_target_properties(subtle_ct_binsec PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
+    find_program(BINSEC_EXE binsec)
+    if(BINSEC_EXE)
+      add_custom_target(binsec_verify
+        COMMAND ${CMAKE_SOURCE_DIR}/tests/binsec/run_binsec.sh
+                ${BINSEC_EXE} $<TARGET_FILE:subtle_ct_binsec>
+        DEPENDS subtle_ct_binsec
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Running Binsec constant-time verification")
     endif()
+
   else()
-    # Correctness tests (GTest) -- skipped under CT verification modes
+    # Correctness tests (GTest)
     if(SUBTLE_FETCH_DEPS)
       message(STATUS "Fetching GTest...")
       include(FetchContent)

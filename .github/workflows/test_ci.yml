@@ -115,3 +115,31 @@ jobs:
 
       - name: Test
         run: ctest --test-dir build --output-on-failure -j
+
+  binsec:
+    runs-on: ubuntu-latest
+    container:
+      image: binsec/binsec:latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [g++, clang++]
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install build tools
+        run: apt-get update && apt-get install -y cmake g++ clang make
+
+      - name: Configure
+        run: >
+          cmake -B build
+          -DCMAKE_CXX_COMPILER=${{ matrix.compiler }}
+          -DCMAKE_BUILD_TYPE=Release
+          -DSUBTLE_BUILD_TESTS=ON
+          -DSUBTLE_BINSEC=ON
+
+      - name: Build
+        run: cmake --build build -j
+
+      - name: Binsec Verify
+        run: cmake --build build --target binsec_verify

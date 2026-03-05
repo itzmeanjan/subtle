@@ -37,7 +37,7 @@ for compiler in "${COMPILERS[@]}"; do
           -DSUBTLE_BUILD_TESTS=ON \
           -DSUBTLE_BINSEC=ON 2>&1
         cmake --build /tmp/${build_dir} -j 2>&1
-        /work/tests/binsec/run_binsec.sh binsec /tmp/${build_dir}/subtle_ct_binsec
+        /work/tests/scripts/run_binsec.sh binsec /tmp/${build_dir}/subtle_ct_binsec
       " && status=0 || status=$?
 
     if [ "$status" -ne 0 ]; then

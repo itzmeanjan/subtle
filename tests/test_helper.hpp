@@ -1,7 +1,9 @@
 #pragma once
 #include "subtle.hpp"
+#include <algorithm>
 #include <gtest/gtest.h>
 #include <random>
+#include <vector>
 
 // Test cases for ensuring functional correctness of constant-time comparison
 // and selection operations
@@ -255,6 +257,32 @@ test_ct_lt()
 
     const returnT z = subtle::ct_lt<operandT, returnT>(x, y);
     ASSERT_EQ(z, (x < y ? truthv : falsev));
+  }
+}
+
+// Test functional correctness of constant-time zeroize operation,
+// verifying all elements of a span are zeroed after the operation.
+template<typename T>
+void
+test_ct_zeroize()
+{
+  constexpr size_t MIN_SIZE = 0;
+  constexpr size_t MAX_SIZE = 1024;
+
+  std::random_device rd;
+  std::mt19937_64 gen(rd());
+  std::uniform_int_distribution<size_t> size_dis(MIN_SIZE, MAX_SIZE);
+
+  for (size_t i = 0; i < ITERATIONS; i++) {
+    const size_t len = size_dis(gen);
+    std::vector<T> buf(len);
+
+    std::ranges::generate(buf, [&]() -> T { return static_cast<T>(gen()); });
+    subtle::ct_zeroize(std::span<T>(buf));
+
+    for (const auto& elem : buf) {
+      ASSERT_EQ(elem, T{ 0 });
+    }
   }
 }
 

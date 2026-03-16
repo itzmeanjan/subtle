@@ -33,6 +33,17 @@ uint64_t secret_x64;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variabl
 uint64_t secret_y64;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,misc-use-internal-linkage)
 uint64_t secret_br64; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,misc-use-internal-linkage)
 
+// --- Global secret buffer inputs for ct_zeroize ---
+
+constexpr size_t ZEROIZE_BUF_LEN = 16;
+
+// clang-format off
+uint8_t secret_buf8[ZEROIZE_BUF_LEN];   // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,cppcoreguidelines-avoid-c-arrays,misc-use-internal-linkage,hicpp-avoid-c-arrays,modernize-avoid-c-arrays)
+uint16_t secret_buf16[ZEROIZE_BUF_LEN]; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,cppcoreguidelines-avoid-c-arrays,misc-use-internal-linkage,hicpp-avoid-c-arrays,modernize-avoid-c-arrays)
+uint32_t secret_buf32[ZEROIZE_BUF_LEN]; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,cppcoreguidelines-avoid-c-arrays,misc-use-internal-linkage,hicpp-avoid-c-arrays,modernize-avoid-c-arrays)
+uint64_t secret_buf64[ZEROIZE_BUF_LEN]; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,cppcoreguidelines-avoid-c-arrays,misc-use-internal-linkage,hicpp-avoid-c-arrays,modernize-avoid-c-arrays)
+// clang-format on
+
 // --- Volatile sinks (prevent dead code elimination) ---
 
 volatile uint8_t sink8;   // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,misc-use-internal-linkage)
@@ -260,6 +271,40 @@ binsec_ct_swap_u64()
 {
   subtle::ct_swap<uint64_t, uint64_t>(secret_br64, secret_x64, secret_y64);
   sink64 = secret_x64;
+  _exit(0);
+}
+
+// --- ct_zeroize (buffer contents are secret) ---
+
+extern "C" void
+binsec_ct_zeroize_u8()
+{
+  subtle::ct_zeroize(std::span<uint8_t, ZEROIZE_BUF_LEN>(secret_buf8));
+  sink8 = secret_buf8[0];
+  _exit(0);
+}
+
+extern "C" void
+binsec_ct_zeroize_u16()
+{
+  subtle::ct_zeroize(std::span<uint16_t, ZEROIZE_BUF_LEN>(secret_buf16));
+  sink16 = secret_buf16[0];
+  _exit(0);
+}
+
+extern "C" void
+binsec_ct_zeroize_u32()
+{
+  subtle::ct_zeroize(std::span<uint32_t, ZEROIZE_BUF_LEN>(secret_buf32));
+  sink32 = secret_buf32[0];
+  _exit(0);
+}
+
+extern "C" void
+binsec_ct_zeroize_u64()
+{
+  subtle::ct_zeroize(std::span<uint64_t, ZEROIZE_BUF_LEN>(secret_buf64));
+  sink64 = secret_buf64[0];
   _exit(0);
 }
 

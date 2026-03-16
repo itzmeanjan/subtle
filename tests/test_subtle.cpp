@@ -177,3 +177,19 @@ TYPED_TEST(CtLtTest, Correctness)
 
   test_subtle::test_ct_lt<operandT, returnT>();
 }
+
+// --- ct_zeroize tests ---
+
+using ElementTypes =
+  ::testing::Types<uint8_t, uint16_t, uint32_t, uint64_t, int8_t, int16_t, int32_t, int64_t, char, unsigned char, signed char, char8_t, char16_t, char32_t, std::byte>;
+
+template<typename T>
+class CtZeroizeTest : public ::testing::Test
+{};
+
+TYPED_TEST_SUITE(CtZeroizeTest, ElementTypes);
+
+TYPED_TEST(CtZeroizeTest, Correctness)
+{
+  test_subtle::test_ct_zeroize<TypeParam>();
+}

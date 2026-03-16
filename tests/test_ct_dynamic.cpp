@@ -1,4 +1,6 @@
 #include "subtle.hpp"
+#include <algorithm>
+#include <array>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -162,6 +164,30 @@ verify_ct_lt()
   }
 }
 
+// --- Zeroize ---
+
+template<typename T>
+void
+verify_ct_zeroize()
+{
+  constexpr size_t FIXED_BUF_SIZE = 16;
+
+  std::random_device rd;
+  std::mt19937_64 gen(rd());
+  std::uniform_int_distribution<T> dis;
+
+  for (size_t i = 0; i < ITERATIONS; i++) {
+    std::array<T, FIXED_BUF_SIZE> buf{};
+    std::ranges::generate(buf, [&]() { return dis(gen); });
+
+    CT_POISON(buf.data(), buf.size());
+    subtle::ct_zeroize(std::span<T, FIXED_BUF_SIZE>(buf));
+
+    volatile T sink = buf[0];
+    static_cast<void>(sink);
+  }
+}
+
 // --- Conditional selection ---
 
 template<typename operandT, typename returnT>
@@ -316,6 +342,12 @@ main()
 
   std::puts("  ct_swap...");
   verify_all_types<swap_wrapper>();
+
+  std::puts("  ct_zeroize...");
+  verify_ct_zeroize<uint8_t>();
+  verify_ct_zeroize<uint16_t>();
+  verify_ct_zeroize<uint32_t>();
+  verify_ct_zeroize<uint64_t>();
 
   std::puts("All constant-time checks passed.");
   return EXIT_SUCCESS;

@@ -34,9 +34,13 @@ for func in $FUNCTIONS; do
   width="${func##*_u}"
 
   # Determine which globals are secret.
-  secrets="secret_x${width}, secret_y${width}"
-  if [[ "$func" == *_select_* || "$func" == *_swap_* ]]; then
-    secrets="${secrets}, secret_br${width}"
+  if [[ "$func" == *_zeroize_* ]]; then
+    secrets="secret_buf${width}"
+  else
+    secrets="secret_x${width}, secret_y${width}"
+    if [[ "$func" == *_select_* || "$func" == *_swap_* ]]; then
+      secrets="${secrets}, secret_br${width}"
+    fi
   fi
 
   # Generate .cfg script.

@@ -1,6 +1,8 @@
 #pragma once
 #include "forceinline.hpp"
+#include <algorithm>
 #include <cstddef>
+#include <span>
 #include <type_traits>
 
 // MSan detection: the "+r" asm constraint reads the value, which triggers
@@ -203,6 +205,21 @@ ct_lt(const operandT x, const operandT y)
 {
   const returnT z = ct_ge<operandT, returnT>(x, y);
   return static_cast<returnT>(~z); // bit-inverted result of >= test
+}
+
+// Securely zeroizes a std::span, preventing the compiler from optimizing away the operation.
+// At compile-time: a plain fill suffices -- there is no real memory to protect.
+// At runtime: the fill is followed by a compiler barrier (empty asm with "memory" clobber)
+// that forces the compiler to treat the array's memory as externally observable, preventing
+// dead store elimination. The barrier generates zero instructions.
+template<typename T, size_t N>
+forceinline constexpr void
+ct_zeroize(std::span<T, N> vals)
+{
+  std::ranges::fill(vals, T{});
+  if (!std::is_constant_evaluated()) {
+    asm volatile("" : : "r"(vals.data()) : "memory"); // NOLINT(hicpp-no-assembler)
+  }
 }
 
 }

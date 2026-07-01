@@ -222,6 +222,32 @@ verify_ct_conditional_memcpy()
   }
 }
 
+// --- Table lookup ---
+
+template<typename T>
+void
+verify_ct_lookup()
+{
+  constexpr size_t FIXED_BUF_SIZE = 16;
+
+  std::random_device rd;
+  std::mt19937_64 gen(rd());
+  std::uniform_int_distribution<T> dis;
+
+  for (size_t i = 0; i < ITERATIONS; i++) {
+    std::array<T, FIXED_BUF_SIZE> table{};
+    T idx = static_cast<T>(dis(gen) % FIXED_BUF_SIZE);
+
+    std::ranges::generate(table, [&]() { return dis(gen); });
+
+    CT_POISON(table.data(), table.size() * sizeof(T));
+    CT_POISON(&idx, sizeof(idx));
+
+    volatile T sink = subtle::ct_lookup<T, T>(idx, std::span<const T, FIXED_BUF_SIZE>(table));
+    static_cast<void>(sink);
+  }
+}
+
 // --- Zeroize ---
 
 template<typename T>
@@ -412,6 +438,12 @@ main()
   verify_ct_conditional_memcpy<uint16_t>();
   verify_ct_conditional_memcpy<uint32_t>();
   verify_ct_conditional_memcpy<uint64_t>();
+
+  std::puts("  ct_lookup...");
+  verify_ct_lookup<uint8_t>();
+  verify_ct_lookup<uint16_t>();
+  verify_ct_lookup<uint32_t>();
+  verify_ct_lookup<uint64_t>();
 
   std::puts("  ct_zeroize...");
   verify_ct_zeroize<uint8_t>();

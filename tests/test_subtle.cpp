@@ -225,3 +225,19 @@ TYPED_TEST(CtConditionalMemcpyTest, Correctness)
 
   test_subtle::test_ct_conditional_memcpy<operandT, branchT>();
 }
+
+// --- ct_lookup tests ---
+
+template<typename T>
+class CtLookupTest : public ::testing::Test
+{};
+
+TYPED_TEST_SUITE(CtLookupTest, TypeCombinations);
+
+TYPED_TEST(CtLookupTest, Correctness)
+{
+  using operandT = typename TypeParam::first_type;
+  using indexT = typename TypeParam::second_type;
+
+  test_subtle::test_ct_lookup<operandT, indexT>();
+}

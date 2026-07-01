@@ -342,6 +342,36 @@ binsec_ct_conditional_memcpy_u64()
   _exit(0);
 }
 
+// --- ct_lookup (secret index into a secret table) ---
+
+extern "C" void
+binsec_ct_lookup_u8()
+{
+  sink8 = subtle::ct_lookup<uint8_t, uint8_t>(secret_x8, std::span<const uint8_t, SECRET_BUF_LEN>(secret_buf1_u8));
+  _exit(0);
+}
+
+extern "C" void
+binsec_ct_lookup_u16()
+{
+  sink16 = subtle::ct_lookup<uint16_t, uint16_t>(secret_x16, std::span<const uint16_t, SECRET_BUF_LEN>(secret_buf1_u16));
+  _exit(0);
+}
+
+extern "C" void
+binsec_ct_lookup_u32()
+{
+  sink32 = subtle::ct_lookup<uint32_t, uint32_t>(secret_x32, std::span<const uint32_t, SECRET_BUF_LEN>(secret_buf1_u32));
+  _exit(0);
+}
+
+extern "C" void
+binsec_ct_lookup_u64()
+{
+  sink64 = subtle::ct_lookup<uint64_t, uint64_t>(secret_x64, std::span<const uint64_t, SECRET_BUF_LEN>(secret_buf1_u64));
+  _exit(0);
+}
+
 // --- ct_zeroize (buffer contents are secret) ---
 
 extern "C" void

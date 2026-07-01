@@ -363,4 +363,33 @@ test_ct_conditional_memcpy()
   }
 }
 
+// Test functional correctness of constant-time table lookup operation, checking
+// the scanned result against a plain table[idx] access.
+template<typename operandT, typename indexT>
+void
+test_ct_lookup()
+  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<indexT>)
+{
+  constexpr size_t MIN_SIZE = 1;
+  constexpr size_t MAX_SIZE = 256; // fits the narrowest ( uint8_t ) index range
+
+  std::random_device rd;
+  std::mt19937_64 gen(rd());
+  std::uniform_int_distribution<operandT> dis;
+  std::uniform_int_distribution<size_t> size_dis(MIN_SIZE, MAX_SIZE);
+
+  for (size_t i = 0; i < ITERATIONS; i++) {
+    const size_t len = size_dis(gen);
+
+    std::vector<operandT> table(len);
+    std::ranges::generate(table, [&]() { return dis(gen); });
+
+    std::uniform_int_distribution<size_t> idx_dis(0, len - 1);
+    const size_t idx = idx_dis(gen);
+
+    const operandT z = subtle::ct_lookup<indexT, operandT>(static_cast<indexT>(idx), std::span<const operandT>(table));
+    ASSERT_EQ(z, table[idx]);
+  }
+}
+
 }

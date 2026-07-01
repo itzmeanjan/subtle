@@ -265,4 +265,25 @@ ct_conditional_memcpy(const branchT br, std::span<operandT, N> dst, std::span<co
   }
 }
 
+// Given a secret index idx ( of type indexT ) and a span of unsigned integers
+// table, this routine returns table[idx] without ever using idx to address
+// memory -- defeating cache-timing side channels that a plain table[idx] would
+// expose.
+//
+// idx is expected to be in range [0, table.size()); an out-of-range idx matches
+// no slot and yields a zero result.
+template<typename indexT, typename operandT, size_t N>
+forceinline constexpr operandT
+ct_lookup(const indexT idx, std::span<const operandT, N> table)
+  requires(std::is_unsigned_v<indexT> && std::is_unsigned_v<operandT>)
+{
+  operandT result = operandT{ 0 };
+  for (size_t j = 0; j < table.size(); j++) {
+    const operandT mask = ct_eq<indexT, operandT>(static_cast<indexT>(j), idx);
+    result = ct_select<operandT, operandT>(mask, table[j], result);
+  }
+
+  return result;
+}
+
 }

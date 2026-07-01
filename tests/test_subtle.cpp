@@ -193,3 +193,19 @@ TYPED_TEST(CtZeroizeTest, Correctness)
 {
   test_subtle::test_ct_zeroize<TypeParam>();
 }
+
+// --- ct_memcmp tests ---
+
+template<typename T>
+class CtMemcmpTest : public ::testing::Test
+{};
+
+TYPED_TEST_SUITE(CtMemcmpTest, TypeCombinations);
+
+TYPED_TEST(CtMemcmpTest, Correctness)
+{
+  using operandT = typename TypeParam::first_type;
+  using returnT = typename TypeParam::second_type;
+
+  test_subtle::test_ct_memcmp<operandT, returnT>();
+}

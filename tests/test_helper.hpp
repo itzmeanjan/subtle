@@ -286,4 +286,41 @@ test_ct_zeroize()
   }
 }
 
+// Test functional correctness of constant-time memory comparison operation,
+// checking result against element-wise equality via std::equal.
+template<typename operandT, typename returnT>
+void
+test_ct_memcmp()
+  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
+{
+  constexpr returnT truthv = static_cast<returnT>(~returnT{ 0 });
+  constexpr returnT falsev = 0;
+
+  constexpr size_t MIN_SIZE = 0;
+  constexpr size_t MAX_SIZE = 1024;
+
+  std::random_device rd;
+  std::mt19937_64 gen(rd());
+  std::uniform_int_distribution<operandT> dis;
+  std::uniform_int_distribution<size_t> size_dis(MIN_SIZE, MAX_SIZE);
+
+  for (size_t i = 0; i < ITERATIONS; i++) {
+    const size_t len = size_dis(gen);
+
+    std::vector<operandT> lhs(len);
+    std::vector<operandT> rhs(len);
+
+    std::ranges::generate(lhs, [&]() { return dis(gen); });
+    std::ranges::generate(rhs, [&]() { return dis(gen); });
+
+    const returnT z = subtle::ct_memcmp<operandT, returnT>(std::span<const operandT>(lhs), std::span<const operandT>(rhs));
+    const bool expected = std::equal(lhs.begin(), lhs.end(), rhs.begin());
+    ASSERT_EQ(z, (expected ? truthv : falsev));
+
+    // Identical spans must return truth value
+    const returnT self = subtle::ct_memcmp<operandT, returnT>(std::span<const operandT>(lhs), std::span<const operandT>(lhs));
+    ASSERT_EQ(self, truthv);
+  }
+}
+
 }

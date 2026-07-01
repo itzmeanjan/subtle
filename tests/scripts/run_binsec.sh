@@ -34,8 +34,10 @@ for func in $FUNCTIONS; do
   width="${func##*_u}"
 
   # Determine which globals are secret.
-  if [[ "$func" == *_zeroize_* ]]; then
-    secrets="secret_buf${width}"
+  if [[ "$func" == *_memcmp_* ]]; then
+    secrets="secret_buf1_u${width}, secret_buf2_u${width}"
+  elif [[ "$func" == *_zeroize_* ]]; then
+    secrets="secret_buf1_u${width}"
   else
     secrets="secret_x${width}, secret_y${width}"
     if [[ "$func" == *_select_* || "$func" == *_swap_* ]]; then

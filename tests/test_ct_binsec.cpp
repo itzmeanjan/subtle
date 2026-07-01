@@ -33,15 +33,19 @@ uint64_t secret_x64;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variabl
 uint64_t secret_y64;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,misc-use-internal-linkage)
 uint64_t secret_br64; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,misc-use-internal-linkage)
 
-// --- Global secret buffer inputs for ct_zeroize ---
+// --- Global secret buffer inputs (used by ct_zeroize and ct_memcmp) ---
 
-constexpr size_t ZEROIZE_BUF_LEN = 16;
+constexpr size_t SECRET_BUF_LEN = 16;
 
 // clang-format off
-uint8_t secret_buf8[ZEROIZE_BUF_LEN];   // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,cppcoreguidelines-avoid-c-arrays,misc-use-internal-linkage,hicpp-avoid-c-arrays,modernize-avoid-c-arrays)
-uint16_t secret_buf16[ZEROIZE_BUF_LEN]; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,cppcoreguidelines-avoid-c-arrays,misc-use-internal-linkage,hicpp-avoid-c-arrays,modernize-avoid-c-arrays)
-uint32_t secret_buf32[ZEROIZE_BUF_LEN]; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,cppcoreguidelines-avoid-c-arrays,misc-use-internal-linkage,hicpp-avoid-c-arrays,modernize-avoid-c-arrays)
-uint64_t secret_buf64[ZEROIZE_BUF_LEN]; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,cppcoreguidelines-avoid-c-arrays,misc-use-internal-linkage,hicpp-avoid-c-arrays,modernize-avoid-c-arrays)
+uint8_t  secret_buf1_u8[SECRET_BUF_LEN];  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,cppcoreguidelines-avoid-c-arrays,misc-use-internal-linkage,hicpp-avoid-c-arrays,modernize-avoid-c-arrays)
+uint16_t secret_buf1_u16[SECRET_BUF_LEN]; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,cppcoreguidelines-avoid-c-arrays,misc-use-internal-linkage,hicpp-avoid-c-arrays,modernize-avoid-c-arrays)
+uint32_t secret_buf1_u32[SECRET_BUF_LEN]; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,cppcoreguidelines-avoid-c-arrays,misc-use-internal-linkage,hicpp-avoid-c-arrays,modernize-avoid-c-arrays)
+uint64_t secret_buf1_u64[SECRET_BUF_LEN]; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,cppcoreguidelines-avoid-c-arrays,misc-use-internal-linkage,hicpp-avoid-c-arrays,modernize-avoid-c-arrays)
+uint8_t  secret_buf2_u8[SECRET_BUF_LEN];  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,cppcoreguidelines-avoid-c-arrays,misc-use-internal-linkage,hicpp-avoid-c-arrays,modernize-avoid-c-arrays)
+uint16_t secret_buf2_u16[SECRET_BUF_LEN]; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,cppcoreguidelines-avoid-c-arrays,misc-use-internal-linkage,hicpp-avoid-c-arrays,modernize-avoid-c-arrays)
+uint32_t secret_buf2_u32[SECRET_BUF_LEN]; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,cppcoreguidelines-avoid-c-arrays,misc-use-internal-linkage,hicpp-avoid-c-arrays,modernize-avoid-c-arrays)
+uint64_t secret_buf2_u64[SECRET_BUF_LEN]; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,cppcoreguidelines-avoid-c-arrays,misc-use-internal-linkage,hicpp-avoid-c-arrays,modernize-avoid-c-arrays)
 // clang-format on
 
 // --- Volatile sinks (prevent dead code elimination) ---
@@ -274,37 +278,67 @@ binsec_ct_swap_u64()
   _exit(0);
 }
 
+// --- ct_memcmp (both buffers are secret) ---
+
+extern "C" void
+binsec_ct_memcmp_u8()
+{
+  sink8 = subtle::ct_memcmp<uint8_t, uint8_t>(std::span<const uint8_t, SECRET_BUF_LEN>(secret_buf1_u8), std::span<const uint8_t, SECRET_BUF_LEN>(secret_buf2_u8));
+  _exit(0);
+}
+
+extern "C" void
+binsec_ct_memcmp_u16()
+{
+  sink16 = subtle::ct_memcmp<uint16_t, uint16_t>(std::span<const uint16_t, SECRET_BUF_LEN>(secret_buf1_u16), std::span<const uint16_t, SECRET_BUF_LEN>(secret_buf2_u16));
+  _exit(0);
+}
+
+extern "C" void
+binsec_ct_memcmp_u32()
+{
+  sink32 = subtle::ct_memcmp<uint32_t, uint32_t>(std::span<const uint32_t, SECRET_BUF_LEN>(secret_buf1_u32), std::span<const uint32_t, SECRET_BUF_LEN>(secret_buf2_u32));
+  _exit(0);
+}
+
+extern "C" void
+binsec_ct_memcmp_u64()
+{
+  sink64 = subtle::ct_memcmp<uint64_t, uint64_t>(std::span<const uint64_t, SECRET_BUF_LEN>(secret_buf1_u64), std::span<const uint64_t, SECRET_BUF_LEN>(secret_buf2_u64));
+  _exit(0);
+}
+
 // --- ct_zeroize (buffer contents are secret) ---
 
 extern "C" void
 binsec_ct_zeroize_u8()
 {
-  subtle::ct_zeroize(std::span<uint8_t, ZEROIZE_BUF_LEN>(secret_buf8));
-  sink8 = secret_buf8[0];
+  subtle::ct_zeroize(std::span<uint8_t, SECRET_BUF_LEN>(secret_buf1_u8));
+  sink8 = secret_buf1_u8[0];
   _exit(0);
 }
 
 extern "C" void
 binsec_ct_zeroize_u16()
 {
-  subtle::ct_zeroize(std::span<uint16_t, ZEROIZE_BUF_LEN>(secret_buf16));
-  sink16 = secret_buf16[0];
+  subtle::ct_zeroize(std::span<uint16_t, SECRET_BUF_LEN>(secret_buf1_u16));
+  sink16 = secret_buf1_u16[0];
   _exit(0);
 }
 
 extern "C" void
 binsec_ct_zeroize_u32()
 {
-  subtle::ct_zeroize(std::span<uint32_t, ZEROIZE_BUF_LEN>(secret_buf32));
-  sink32 = secret_buf32[0];
+  subtle::ct_zeroize(std::span<uint32_t, SECRET_BUF_LEN>(secret_buf1_u32));
+  sink32 = secret_buf1_u32[0];
   _exit(0);
 }
 
 extern "C" void
 binsec_ct_zeroize_u64()
 {
-  subtle::ct_zeroize(std::span<uint64_t, ZEROIZE_BUF_LEN>(secret_buf64));
-  sink64 = secret_buf64[0];
+  subtle::ct_zeroize(std::span<uint64_t, SECRET_BUF_LEN>(secret_buf1_u64));
+  sink64 = secret_buf1_u64[0];
   _exit(0);
 }
 

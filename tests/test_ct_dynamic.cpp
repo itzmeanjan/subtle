@@ -164,6 +164,33 @@ verify_ct_lt()
   }
 }
 
+// --- Memory comparison ---
+
+template<typename T>
+void
+verify_ct_memcmp()
+{
+  constexpr size_t FIXED_BUF_SIZE = 16;
+
+  std::random_device rd;
+  std::mt19937_64 gen(rd());
+  std::uniform_int_distribution<T> dis;
+
+  for (size_t i = 0; i < ITERATIONS; i++) {
+    std::array<T, FIXED_BUF_SIZE> lhs{};
+    std::array<T, FIXED_BUF_SIZE> rhs{};
+
+    std::ranges::generate(lhs, [&]() { return dis(gen); });
+    std::ranges::generate(rhs, [&]() { return dis(gen); });
+
+    CT_POISON(lhs.data(), lhs.size() * sizeof(T));
+    CT_POISON(rhs.data(), rhs.size() * sizeof(T));
+
+    volatile T sink = subtle::ct_memcmp<T, T>(std::span<const T, FIXED_BUF_SIZE>(lhs), std::span<const T, FIXED_BUF_SIZE>(rhs));
+    static_cast<void>(sink);
+  }
+}
+
 // --- Zeroize ---
 
 template<typename T>
@@ -180,7 +207,7 @@ verify_ct_zeroize()
     std::array<T, FIXED_BUF_SIZE> buf{};
     std::ranges::generate(buf, [&]() { return dis(gen); });
 
-    CT_POISON(buf.data(), buf.size());
+    CT_POISON(buf.data(), buf.size() * sizeof(T));
     subtle::ct_zeroize(std::span<T, FIXED_BUF_SIZE>(buf));
 
     volatile T sink = buf[0];
@@ -342,6 +369,12 @@ main()
 
   std::puts("  ct_swap...");
   verify_all_types<swap_wrapper>();
+
+  std::puts("  ct_memcmp...");
+  verify_ct_memcmp<uint8_t>();
+  verify_ct_memcmp<uint16_t>();
+  verify_ct_memcmp<uint32_t>();
+  verify_ct_memcmp<uint64_t>();
 
   std::puts("  ct_zeroize...");
   verify_ct_zeroize<uint8_t>();

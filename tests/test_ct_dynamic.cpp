@@ -191,6 +191,37 @@ verify_ct_memcmp()
   }
 }
 
+// --- Conditional memcpy ---
+
+template<typename T>
+void
+verify_ct_conditional_memcpy()
+{
+  constexpr size_t FIXED_BUF_SIZE = 16;
+
+  std::random_device rd;
+  std::mt19937_64 gen(rd());
+  std::uniform_int_distribution<T> dis;
+
+  for (size_t i = 0; i < ITERATIONS; i++) {
+    std::array<T, FIXED_BUF_SIZE> dst{};
+    std::array<T, FIXED_BUF_SIZE> src{};
+    T br = -static_cast<T>(dis(gen) & 1U);
+
+    std::ranges::generate(dst, [&]() { return dis(gen); });
+    std::ranges::generate(src, [&]() { return dis(gen); });
+
+    CT_POISON(dst.data(), dst.size() * sizeof(T));
+    CT_POISON(src.data(), src.size() * sizeof(T));
+    CT_POISON(&br, sizeof(br));
+
+    subtle::ct_conditional_memcpy<T, T>(br, std::span<T, FIXED_BUF_SIZE>(dst), std::span<const T, FIXED_BUF_SIZE>(src));
+
+    volatile T sink = dst[0];
+    static_cast<void>(sink);
+  }
+}
+
 // --- Zeroize ---
 
 template<typename T>
@@ -375,6 +406,12 @@ main()
   verify_ct_memcmp<uint16_t>();
   verify_ct_memcmp<uint32_t>();
   verify_ct_memcmp<uint64_t>();
+
+  std::puts("  ct_conditional_memcpy...");
+  verify_ct_conditional_memcpy<uint8_t>();
+  verify_ct_conditional_memcpy<uint16_t>();
+  verify_ct_conditional_memcpy<uint32_t>();
+  verify_ct_conditional_memcpy<uint64_t>();
 
   std::puts("  ct_zeroize...");
   verify_ct_zeroize<uint8_t>();

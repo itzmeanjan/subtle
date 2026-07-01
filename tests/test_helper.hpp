@@ -323,4 +323,44 @@ test_ct_memcmp()
   }
 }
 
+// Test functional correctness of constant-time conditional memcpy operation,
+// verifying that dst is overwritten with src on truth value and left unchanged
+// on false value.
+template<typename operandT, typename branchT>
+void
+test_ct_conditional_memcpy()
+  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<branchT>)
+{
+  constexpr branchT truthv = static_cast<branchT>(~branchT{ 0 });
+  constexpr branchT falsev = 0;
+
+  constexpr size_t MIN_SIZE = 0;
+  constexpr size_t MAX_SIZE = 1024;
+
+  std::random_device rd;
+  std::mt19937_64 gen(rd());
+  std::uniform_int_distribution<operandT> dis;
+  std::uniform_int_distribution<size_t> size_dis(MIN_SIZE, MAX_SIZE);
+
+  for (size_t i = 0; i < ITERATIONS; i++) {
+    const size_t len = size_dis(gen);
+
+    std::vector<operandT> src(len);
+    std::vector<operandT> dst(len);
+
+    std::ranges::generate(src, [&]() { return dis(gen); });
+    std::ranges::generate(dst, [&]() { return dis(gen); });
+
+    // Truth value: dst must become an exact copy of src.
+    std::vector<operandT> dst_truth = dst;
+    subtle::ct_conditional_memcpy<branchT, operandT>(truthv, std::span<operandT>(dst_truth), std::span<const operandT>(src));
+    ASSERT_EQ(dst_truth, src);
+
+    // False value: dst must retain its original contents.
+    std::vector<operandT> dst_false = dst;
+    subtle::ct_conditional_memcpy<branchT, operandT>(falsev, std::span<operandT>(dst_false), std::span<const operandT>(src));
+    ASSERT_EQ(dst_false, dst);
+  }
+}
+
 }

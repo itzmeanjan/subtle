@@ -209,3 +209,19 @@ TYPED_TEST(CtMemcmpTest, Correctness)
 
   test_subtle::test_ct_memcmp<operandT, returnT>();
 }
+
+// --- ct_conditional_memcpy tests ---
+
+template<typename T>
+class CtConditionalMemcpyTest : public ::testing::Test
+{};
+
+TYPED_TEST_SUITE(CtConditionalMemcpyTest, TypeCombinations);
+
+TYPED_TEST(CtConditionalMemcpyTest, Correctness)
+{
+  using operandT = typename TypeParam::first_type;
+  using branchT = typename TypeParam::second_type;
+
+  test_subtle::test_ct_conditional_memcpy<operandT, branchT>();
+}

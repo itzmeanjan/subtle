@@ -308,6 +308,40 @@ binsec_ct_memcmp_u64()
   _exit(0);
 }
 
+// --- ct_conditional_memcpy (dst buffer, src buffer, and br are all secret) ---
+
+extern "C" void
+binsec_ct_conditional_memcpy_u8()
+{
+  subtle::ct_conditional_memcpy<uint8_t, uint8_t>(secret_br8, std::span<uint8_t, SECRET_BUF_LEN>(secret_buf1_u8), std::span<const uint8_t, SECRET_BUF_LEN>(secret_buf2_u8));
+  sink8 = secret_buf1_u8[0];
+  _exit(0);
+}
+
+extern "C" void
+binsec_ct_conditional_memcpy_u16()
+{
+  subtle::ct_conditional_memcpy<uint16_t, uint16_t>(secret_br16, std::span<uint16_t, SECRET_BUF_LEN>(secret_buf1_u16), std::span<const uint16_t, SECRET_BUF_LEN>(secret_buf2_u16));
+  sink16 = secret_buf1_u16[0];
+  _exit(0);
+}
+
+extern "C" void
+binsec_ct_conditional_memcpy_u32()
+{
+  subtle::ct_conditional_memcpy<uint32_t, uint32_t>(secret_br32, std::span<uint32_t, SECRET_BUF_LEN>(secret_buf1_u32), std::span<const uint32_t, SECRET_BUF_LEN>(secret_buf2_u32));
+  sink32 = secret_buf1_u32[0];
+  _exit(0);
+}
+
+extern "C" void
+binsec_ct_conditional_memcpy_u64()
+{
+  subtle::ct_conditional_memcpy<uint64_t, uint64_t>(secret_br64, std::span<uint64_t, SECRET_BUF_LEN>(secret_buf1_u64), std::span<const uint64_t, SECRET_BUF_LEN>(secret_buf2_u64));
+  sink64 = secret_buf1_u64[0];
+  _exit(0);
+}
+
 // --- ct_zeroize (buffer contents are secret) ---
 
 extern "C" void

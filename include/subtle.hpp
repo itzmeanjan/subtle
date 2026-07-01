@@ -222,4 +222,24 @@ ct_zeroize(std::span<T, N> vals)
   }
 }
 
+// Constant-time comparison of two equal-length spans of unsigned integers.
+// Returns truth value (all bits set) if the spans are element-wise equal,
+// or false value (all bits zero) otherwise.
+//
+// Composes from ct_eq: AND-accumulates per-element equality results.
+// Each ct_eq call contains an optimization barrier, making its return value
+// opaque to the compiler — the loop cannot be short-circuited.
+template<typename operandT, typename returnT, size_t N>
+forceinline constexpr returnT
+ct_memcmp(std::span<const operandT, N> lhs, std::span<const operandT, N> rhs)
+  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
+{
+  returnT acc = static_cast<returnT>(~returnT{ 0 });
+  for (size_t i = 0; i < lhs.size(); i++) {
+    acc = static_cast<returnT>(acc & ct_eq<operandT, returnT>(lhs[i], rhs[i]));
+  }
+
+  return acc;
+}
+
 }

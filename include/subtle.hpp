@@ -242,4 +242,27 @@ ct_memcmp(std::span<const operandT, N> lhs, std::span<const operandT, N> rhs)
   return acc;
 }
 
+// Given a branch value br ( of type branchT ) holding either truth value (
+// represented using value of type branchT s.t. all the bits are set to 1 ) or
+// false value ( represented using value of type branchT s.t. all the bits are
+// set to 0 ) and two equal-length spans dst, src of unsigned integers, this routine
+// overwrites contents of dst with those of src if br is truth value. Otherwise dst
+// retains its original contents.
+//
+// Memory-level analogue of ct_select: composes from ct_select element-wise, so
+// every element of dst is touched regardless of br -- neither the code path nor
+// the accessed memory addresses depend on br. Each ct_select call contains an
+// optimization barrier, keeping the branch value opaque to the compiler.
+//
+// If br takes any value other than these two, this is an undefined behaviour !
+template<typename branchT, typename operandT, size_t N>
+forceinline constexpr void
+ct_conditional_memcpy(const branchT br, std::span<operandT, N> dst, std::span<const operandT, N> src)
+  requires(std::is_unsigned_v<branchT> && std::is_unsigned_v<operandT>)
+{
+  for (size_t i = 0; i < dst.size(); i++) {
+    dst[i] = ct_select<branchT, operandT>(br, src[i], dst[i]);
+  }
+}
+
 }

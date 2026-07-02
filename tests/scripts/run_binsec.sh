@@ -30,20 +30,33 @@ trap 'rm -rf "$TMPDIR"' EXIT
 for func in $FUNCTIONS; do
   TOTAL=$((TOTAL + 1))
 
-  # Extract bitwidth suffix (u8, u16, u32, u64).
-  width="${func##*_u}"
+  # Extract bitwidth suffix (u8/i8, u16/i16, u32/i32, u64/i64).
+  width="${func##*[iu]}"
 
-  # Determine which globals are secret.
-  if [[ "$func" == *_lookup_* ]]; then
-    secrets="secret_x${width}, secret_buf1_u${width}"
-  elif [[ "$func" == *_conditional_memcpy_* ]]; then
-    secrets="secret_buf1_u${width}, secret_buf2_u${width}, secret_br${width}"
-  elif [[ "$func" == *_memcmp_* ]]; then
-    secrets="secret_buf1_u${width}, secret_buf2_u${width}"
-  elif [[ "$func" == *_zeroize_* ]]; then
-    secrets="secret_buf1_u${width}"
+  # Pick signed vs unsigned secret globals based on the type suffix.
+  if [[ "$func" == *_i${width} ]]; then
+    sx="secret_ix${width}"
+    sy="secret_iy${width}"
+    sbuf1="secret_buf1_i${width}"
+    sbuf2="secret_buf2_i${width}"
   else
-    secrets="secret_x${width}, secret_y${width}"
+    sx="secret_x${width}"
+    sy="secret_y${width}"
+    sbuf1="secret_buf1_u${width}"
+    sbuf2="secret_buf2_u${width}"
+  fi
+
+  # Determine which globals are secret, per operation family.
+  if [[ "$func" == *_lookup_* ]]; then
+    secrets="secret_x${width}, ${sbuf1}"
+  elif [[ "$func" == *_conditional_memcpy_* ]]; then
+    secrets="${sbuf1}, ${sbuf2}, secret_br${width}"
+  elif [[ "$func" == *_memcmp_* ]]; then
+    secrets="${sbuf1}, ${sbuf2}"
+  elif [[ "$func" == *_zeroize_* ]]; then
+    secrets="${sbuf1}"
+  else
+    secrets="${sx}, ${sy}"
     if [[ "$func" == *_select_* || "$func" == *_swap_* ]]; then
       secrets="${secrets}, secret_br${width}"
     fi

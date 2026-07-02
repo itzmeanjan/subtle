@@ -2,6 +2,7 @@
 #include "subtle.hpp"
 #include <algorithm>
 #include <gtest/gtest.h>
+#include <limits>
 #include <random>
 #include <vector>
 
@@ -16,14 +17,14 @@ constexpr size_t ITERATIONS = 1UL << 16;
 template<typename operandT, typename returnT>
 void
 test_ct_eq()
-  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<returnT>)
 {
   constexpr returnT truthv = static_cast<returnT>(~returnT{ 0 });
   constexpr returnT falsev = 0;
 
   std::random_device rd;
   std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis;
+  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
 
   for (size_t i = 0; i < ITERATIONS; i++) {
     const operandT x = dis(gen);
@@ -42,14 +43,14 @@ test_ct_eq()
 template<typename operandT, typename returnT>
 void
 test_ct_ne()
-  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<returnT>)
 {
   constexpr returnT truthv = static_cast<returnT>(~returnT{ 0 });
   constexpr returnT falsev = 0;
 
   std::random_device rd;
   std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis;
+  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
 
   for (size_t i = 0; i < ITERATIONS; i++) {
     const operandT x = dis(gen);
@@ -65,14 +66,14 @@ test_ct_ne()
 template<typename operandT, typename returnT>
 void
 test_ct_select()
-  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<returnT>)
 {
   constexpr returnT truthv = static_cast<returnT>(~returnT{ 0 });
   constexpr returnT falsev = 0;
 
   std::random_device rd;
   std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis;
+  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
 
   for (size_t i = 0; i < ITERATIONS; i++) {
     const operandT x = dis(gen);
@@ -87,13 +88,13 @@ test_ct_select()
 template<typename operandT, typename returnT>
 void
 test_ct_swap_truth()
-  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<returnT>)
 {
   constexpr returnT truthv = static_cast<returnT>(~returnT{ 0 });
 
   std::random_device rd;
   std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis;
+  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
 
   for (size_t i = 0; i < ITERATIONS; i++) {
     operandT x = dis(gen);
@@ -113,13 +114,13 @@ test_ct_swap_truth()
 template<typename operandT, typename returnT>
 void
 test_ct_swap_roundtrip()
-  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<returnT>)
 {
   constexpr returnT truthv = static_cast<returnT>(~returnT{ 0 });
 
   std::random_device rd;
   std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis;
+  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
 
   for (size_t i = 0; i < ITERATIONS; i++) {
     operandT x = dis(gen);
@@ -140,13 +141,13 @@ test_ct_swap_roundtrip()
 template<typename operandT, typename returnT>
 void
 test_ct_swap_false()
-  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<returnT>)
 {
   constexpr returnT falsev = 0;
 
   std::random_device rd;
   std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis;
+  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
 
   for (size_t i = 0; i < ITERATIONS; i++) {
     operandT x = dis(gen);
@@ -167,14 +168,14 @@ test_ct_swap_false()
 template<typename operandT, typename returnT>
 void
 test_ct_le()
-  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<returnT>)
 {
   constexpr returnT truthv = static_cast<returnT>(~returnT{ 0 });
   constexpr returnT falsev = 0;
 
   std::random_device rd;
   std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis;
+  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
 
   for (size_t i = 0; i < ITERATIONS; i++) {
     const operandT x = dis(gen);
@@ -193,14 +194,14 @@ test_ct_le()
 template<typename operandT, typename returnT>
 void
 test_ct_gt()
-  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<returnT>)
 {
   constexpr returnT truthv = static_cast<returnT>(~returnT{ 0 });
   constexpr returnT falsev = 0;
 
   std::random_device rd;
   std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis;
+  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
 
   for (size_t i = 0; i < ITERATIONS; i++) {
     const operandT x = dis(gen);
@@ -216,14 +217,14 @@ test_ct_gt()
 template<typename operandT, typename returnT>
 void
 test_ct_ge()
-  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<returnT>)
 {
   constexpr returnT truthv = static_cast<returnT>(~returnT{ 0 });
   constexpr returnT falsev = 0;
 
   std::random_device rd;
   std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis;
+  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
 
   for (size_t i = 0; i < ITERATIONS; i++) {
     const operandT x = dis(gen);
@@ -242,14 +243,14 @@ test_ct_ge()
 template<typename operandT, typename returnT>
 void
 test_ct_lt()
-  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<returnT>)
 {
   constexpr returnT truthv = static_cast<returnT>(~returnT{ 0 });
   constexpr returnT falsev = 0;
 
   std::random_device rd;
   std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis;
+  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
 
   for (size_t i = 0; i < ITERATIONS; i++) {
     const operandT x = dis(gen);
@@ -291,7 +292,7 @@ test_ct_zeroize()
 template<typename operandT, typename returnT>
 void
 test_ct_memcmp()
-  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<returnT>)
 {
   constexpr returnT truthv = static_cast<returnT>(~returnT{ 0 });
   constexpr returnT falsev = 0;
@@ -301,7 +302,7 @@ test_ct_memcmp()
 
   std::random_device rd;
   std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis;
+  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
   std::uniform_int_distribution<size_t> size_dis(MIN_SIZE, MAX_SIZE);
 
   for (size_t i = 0; i < ITERATIONS; i++) {
@@ -329,7 +330,7 @@ test_ct_memcmp()
 template<typename operandT, typename branchT>
 void
 test_ct_conditional_memcpy()
-  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<branchT>)
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<branchT>)
 {
   constexpr branchT truthv = static_cast<branchT>(~branchT{ 0 });
   constexpr branchT falsev = 0;
@@ -339,7 +340,7 @@ test_ct_conditional_memcpy()
 
   std::random_device rd;
   std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis;
+  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
   std::uniform_int_distribution<size_t> size_dis(MIN_SIZE, MAX_SIZE);
 
   for (size_t i = 0; i < ITERATIONS; i++) {
@@ -368,14 +369,14 @@ test_ct_conditional_memcpy()
 template<typename operandT, typename indexT>
 void
 test_ct_lookup()
-  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<indexT>)
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<indexT>)
 {
   constexpr size_t MIN_SIZE = 1;
   constexpr size_t MAX_SIZE = 256; // fits the narrowest ( uint8_t ) index range
 
   std::random_device rd;
   std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis;
+  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
   std::uniform_int_distribution<size_t> size_dis(MIN_SIZE, MAX_SIZE);
 
   for (size_t i = 0; i < ITERATIONS; i++) {

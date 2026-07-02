@@ -33,6 +33,17 @@ uint64_t secret_x64;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variabl
 uint64_t secret_y64;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,misc-use-internal-linkage)
 uint64_t secret_br64; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,misc-use-internal-linkage)
 
+// --- Global signed secret inputs (used by the ordering functions) ---
+
+int8_t secret_ix8;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,misc-use-internal-linkage)
+int8_t secret_iy8;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,misc-use-internal-linkage)
+int16_t secret_ix16; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,misc-use-internal-linkage)
+int16_t secret_iy16; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,misc-use-internal-linkage)
+int32_t secret_ix32; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,misc-use-internal-linkage)
+int32_t secret_iy32; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,misc-use-internal-linkage)
+int64_t secret_ix64; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,misc-use-internal-linkage)
+int64_t secret_iy64; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,misc-use-internal-linkage)
+
 // --- Global secret buffer inputs (used by ct_zeroize and ct_memcmp) ---
 
 constexpr size_t SECRET_BUF_LEN = 16;
@@ -46,6 +57,14 @@ uint8_t  secret_buf2_u8[SECRET_BUF_LEN];  // NOLINT(cppcoreguidelines-avoid-non-
 uint16_t secret_buf2_u16[SECRET_BUF_LEN]; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,cppcoreguidelines-avoid-c-arrays,misc-use-internal-linkage,hicpp-avoid-c-arrays,modernize-avoid-c-arrays)
 uint32_t secret_buf2_u32[SECRET_BUF_LEN]; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,cppcoreguidelines-avoid-c-arrays,misc-use-internal-linkage,hicpp-avoid-c-arrays,modernize-avoid-c-arrays)
 uint64_t secret_buf2_u64[SECRET_BUF_LEN]; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,cppcoreguidelines-avoid-c-arrays,misc-use-internal-linkage,hicpp-avoid-c-arrays,modernize-avoid-c-arrays)
+int8_t   secret_buf1_i8[SECRET_BUF_LEN];  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,cppcoreguidelines-avoid-c-arrays,misc-use-internal-linkage,hicpp-avoid-c-arrays,modernize-avoid-c-arrays)
+int16_t  secret_buf1_i16[SECRET_BUF_LEN]; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,cppcoreguidelines-avoid-c-arrays,misc-use-internal-linkage,hicpp-avoid-c-arrays,modernize-avoid-c-arrays)
+int32_t  secret_buf1_i32[SECRET_BUF_LEN]; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,cppcoreguidelines-avoid-c-arrays,misc-use-internal-linkage,hicpp-avoid-c-arrays,modernize-avoid-c-arrays)
+int64_t  secret_buf1_i64[SECRET_BUF_LEN]; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,cppcoreguidelines-avoid-c-arrays,misc-use-internal-linkage,hicpp-avoid-c-arrays,modernize-avoid-c-arrays)
+int8_t   secret_buf2_i8[SECRET_BUF_LEN];  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,cppcoreguidelines-avoid-c-arrays,misc-use-internal-linkage,hicpp-avoid-c-arrays,modernize-avoid-c-arrays)
+int16_t  secret_buf2_i16[SECRET_BUF_LEN]; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,cppcoreguidelines-avoid-c-arrays,misc-use-internal-linkage,hicpp-avoid-c-arrays,modernize-avoid-c-arrays)
+int32_t  secret_buf2_i32[SECRET_BUF_LEN]; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,cppcoreguidelines-avoid-c-arrays,misc-use-internal-linkage,hicpp-avoid-c-arrays,modernize-avoid-c-arrays)
+int64_t  secret_buf2_i64[SECRET_BUF_LEN]; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,cppcoreguidelines-avoid-c-arrays,misc-use-internal-linkage,hicpp-avoid-c-arrays,modernize-avoid-c-arrays)
 // clang-format on
 
 // --- Volatile sinks (prevent dead code elimination) ---
@@ -214,6 +233,296 @@ extern "C" void
 binsec_ct_lt_u64()
 {
   sink64 = subtle::ct_lt<uint64_t, uint64_t>(secret_x64, secret_y64);
+  _exit(0);
+}
+
+// --- Ordering over signed operands (both operands secret) ---
+//
+// Signed support adds a compile-time sign-bit flip in ct_le; gt/ge/lt derive
+// from it. These prove that flip lowers to branchless code for all inputs.
+
+extern "C" void
+binsec_ct_le_i8()
+{
+  sink8 = subtle::ct_le<int8_t, uint8_t>(secret_ix8, secret_iy8);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_le_i16()
+{
+  sink16 = subtle::ct_le<int16_t, uint16_t>(secret_ix16, secret_iy16);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_le_i32()
+{
+  sink32 = subtle::ct_le<int32_t, uint32_t>(secret_ix32, secret_iy32);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_le_i64()
+{
+  sink64 = subtle::ct_le<int64_t, uint64_t>(secret_ix64, secret_iy64);
+  _exit(0);
+}
+
+extern "C" void
+binsec_ct_gt_i8()
+{
+  sink8 = subtle::ct_gt<int8_t, uint8_t>(secret_ix8, secret_iy8);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_gt_i16()
+{
+  sink16 = subtle::ct_gt<int16_t, uint16_t>(secret_ix16, secret_iy16);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_gt_i32()
+{
+  sink32 = subtle::ct_gt<int32_t, uint32_t>(secret_ix32, secret_iy32);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_gt_i64()
+{
+  sink64 = subtle::ct_gt<int64_t, uint64_t>(secret_ix64, secret_iy64);
+  _exit(0);
+}
+
+extern "C" void
+binsec_ct_ge_i8()
+{
+  sink8 = subtle::ct_ge<int8_t, uint8_t>(secret_ix8, secret_iy8);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_ge_i16()
+{
+  sink16 = subtle::ct_ge<int16_t, uint16_t>(secret_ix16, secret_iy16);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_ge_i32()
+{
+  sink32 = subtle::ct_ge<int32_t, uint32_t>(secret_ix32, secret_iy32);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_ge_i64()
+{
+  sink64 = subtle::ct_ge<int64_t, uint64_t>(secret_ix64, secret_iy64);
+  _exit(0);
+}
+
+extern "C" void
+binsec_ct_lt_i8()
+{
+  sink8 = subtle::ct_lt<int8_t, uint8_t>(secret_ix8, secret_iy8);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_lt_i16()
+{
+  sink16 = subtle::ct_lt<int16_t, uint16_t>(secret_ix16, secret_iy16);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_lt_i32()
+{
+  sink32 = subtle::ct_lt<int32_t, uint32_t>(secret_ix32, secret_iy32);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_lt_i64()
+{
+  sink64 = subtle::ct_lt<int64_t, uint64_t>(secret_ix64, secret_iy64);
+  _exit(0);
+}
+
+// --- Signed operands: equality, selection, swap, and the span operations ---
+
+extern "C" void
+binsec_ct_eq_i8()
+{
+  sink8 = subtle::ct_eq<int8_t, uint8_t>(secret_ix8, secret_iy8);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_eq_i16()
+{
+  sink16 = subtle::ct_eq<int16_t, uint16_t>(secret_ix16, secret_iy16);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_eq_i32()
+{
+  sink32 = subtle::ct_eq<int32_t, uint32_t>(secret_ix32, secret_iy32);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_eq_i64()
+{
+  sink64 = subtle::ct_eq<int64_t, uint64_t>(secret_ix64, secret_iy64);
+  _exit(0);
+}
+
+extern "C" void
+binsec_ct_ne_i8()
+{
+  sink8 = subtle::ct_ne<int8_t, uint8_t>(secret_ix8, secret_iy8);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_ne_i16()
+{
+  sink16 = subtle::ct_ne<int16_t, uint16_t>(secret_ix16, secret_iy16);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_ne_i32()
+{
+  sink32 = subtle::ct_ne<int32_t, uint32_t>(secret_ix32, secret_iy32);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_ne_i64()
+{
+  sink64 = subtle::ct_ne<int64_t, uint64_t>(secret_ix64, secret_iy64);
+  _exit(0);
+}
+
+extern "C" void
+binsec_ct_select_i8()
+{
+  sink8 = static_cast<uint8_t>(subtle::ct_select<uint8_t, int8_t>(secret_br8, secret_ix8, secret_iy8));
+  _exit(0);
+}
+extern "C" void
+binsec_ct_select_i16()
+{
+  sink16 = static_cast<uint16_t>(subtle::ct_select<uint16_t, int16_t>(secret_br16, secret_ix16, secret_iy16));
+  _exit(0);
+}
+extern "C" void
+binsec_ct_select_i32()
+{
+  sink32 = static_cast<uint32_t>(subtle::ct_select<uint32_t, int32_t>(secret_br32, secret_ix32, secret_iy32));
+  _exit(0);
+}
+extern "C" void
+binsec_ct_select_i64()
+{
+  sink64 = static_cast<uint64_t>(subtle::ct_select<uint64_t, int64_t>(secret_br64, secret_ix64, secret_iy64));
+  _exit(0);
+}
+
+extern "C" void
+binsec_ct_swap_i8()
+{
+  subtle::ct_swap<uint8_t, int8_t>(secret_br8, secret_ix8, secret_iy8);
+  sink8 = static_cast<uint8_t>(secret_ix8);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_swap_i16()
+{
+  subtle::ct_swap<uint16_t, int16_t>(secret_br16, secret_ix16, secret_iy16);
+  sink16 = static_cast<uint16_t>(secret_ix16);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_swap_i32()
+{
+  subtle::ct_swap<uint32_t, int32_t>(secret_br32, secret_ix32, secret_iy32);
+  sink32 = static_cast<uint32_t>(secret_ix32);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_swap_i64()
+{
+  subtle::ct_swap<uint64_t, int64_t>(secret_br64, secret_ix64, secret_iy64);
+  sink64 = static_cast<uint64_t>(secret_ix64);
+  _exit(0);
+}
+
+extern "C" void
+binsec_ct_memcmp_i8()
+{
+  sink8 = subtle::ct_memcmp<int8_t, uint8_t>(std::span<const int8_t, SECRET_BUF_LEN>(secret_buf1_i8), std::span<const int8_t, SECRET_BUF_LEN>(secret_buf2_i8));
+  _exit(0);
+}
+extern "C" void
+binsec_ct_memcmp_i16()
+{
+  sink16 = subtle::ct_memcmp<int16_t, uint16_t>(std::span<const int16_t, SECRET_BUF_LEN>(secret_buf1_i16), std::span<const int16_t, SECRET_BUF_LEN>(secret_buf2_i16));
+  _exit(0);
+}
+extern "C" void
+binsec_ct_memcmp_i32()
+{
+  sink32 = subtle::ct_memcmp<int32_t, uint32_t>(std::span<const int32_t, SECRET_BUF_LEN>(secret_buf1_i32), std::span<const int32_t, SECRET_BUF_LEN>(secret_buf2_i32));
+  _exit(0);
+}
+extern "C" void
+binsec_ct_memcmp_i64()
+{
+  sink64 = subtle::ct_memcmp<int64_t, uint64_t>(std::span<const int64_t, SECRET_BUF_LEN>(secret_buf1_i64), std::span<const int64_t, SECRET_BUF_LEN>(secret_buf2_i64));
+  _exit(0);
+}
+
+extern "C" void
+binsec_ct_conditional_memcpy_i8()
+{
+  subtle::ct_conditional_memcpy<uint8_t, int8_t>(secret_br8, std::span<int8_t, SECRET_BUF_LEN>(secret_buf1_i8), std::span<const int8_t, SECRET_BUF_LEN>(secret_buf2_i8));
+  sink8 = static_cast<uint8_t>(secret_buf1_i8[0]);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_conditional_memcpy_i16()
+{
+  subtle::ct_conditional_memcpy<uint16_t, int16_t>(secret_br16, std::span<int16_t, SECRET_BUF_LEN>(secret_buf1_i16), std::span<const int16_t, SECRET_BUF_LEN>(secret_buf2_i16));
+  sink16 = static_cast<uint16_t>(secret_buf1_i16[0]);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_conditional_memcpy_i32()
+{
+  subtle::ct_conditional_memcpy<uint32_t, int32_t>(secret_br32, std::span<int32_t, SECRET_BUF_LEN>(secret_buf1_i32), std::span<const int32_t, SECRET_BUF_LEN>(secret_buf2_i32));
+  sink32 = static_cast<uint32_t>(secret_buf1_i32[0]);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_conditional_memcpy_i64()
+{
+  subtle::ct_conditional_memcpy<uint64_t, int64_t>(secret_br64, std::span<int64_t, SECRET_BUF_LEN>(secret_buf1_i64), std::span<const int64_t, SECRET_BUF_LEN>(secret_buf2_i64));
+  sink64 = static_cast<uint64_t>(secret_buf1_i64[0]);
+  _exit(0);
+}
+
+extern "C" void
+binsec_ct_lookup_i8()
+{
+  sink8 = static_cast<uint8_t>(subtle::ct_lookup<uint8_t, int8_t>(secret_x8, std::span<const int8_t, SECRET_BUF_LEN>(secret_buf1_i8)));
+  _exit(0);
+}
+extern "C" void
+binsec_ct_lookup_i16()
+{
+  sink16 = static_cast<uint16_t>(subtle::ct_lookup<uint16_t, int16_t>(secret_x16, std::span<const int16_t, SECRET_BUF_LEN>(secret_buf1_i16)));
+  _exit(0);
+}
+extern "C" void
+binsec_ct_lookup_i32()
+{
+  sink32 = static_cast<uint32_t>(subtle::ct_lookup<uint32_t, int32_t>(secret_x32, std::span<const int32_t, SECRET_BUF_LEN>(secret_buf1_i32)));
+  _exit(0);
+}
+extern "C" void
+binsec_ct_lookup_i64()
+{
+  sink64 = static_cast<uint64_t>(subtle::ct_lookup<uint64_t, int64_t>(secret_x64, std::span<const int64_t, SECRET_BUF_LEN>(secret_buf1_i64)));
   _exit(0);
 }
 

@@ -14,8 +14,14 @@
 #endif
 #endif
 
-// Constant-time comparison and selection of unsigned integer values.
+// Constant-time comparison and selection of integer values.
 namespace subtle {
+
+// An operand type accepted by the constant-time routines below: any standard
+// integer type -- signed or unsigned, of bit width 8, 16, 32 or 64 -- as well as
+// the character types, but not bool.
+template<typename T>
+concept ct_operand = std::is_integral_v<T> && !std::is_same_v<std::remove_cv_t<T>, bool>;
 
 // Optimization barrier: prevents the compiler from reasoning about `val`,
 // blocking pattern recognition that would restructure constant-time code into branches
@@ -37,9 +43,8 @@ ct_barrier([[maybe_unused]] T& val)
 #endif
 }
 
-// Given two unsigned integers x, y of type operandT ( of bitwidth 8, 16, 32 or
-// 64 ), this routine returns true ( if x == y ) or false ( in case x != y )
-// testing equality of two values.
+// Given two integers x, y of type operandT, this routine returns true ( if
+// x == y ) or false ( in case x != y ) testing equality of two values.
 //
 // We represent truth value using maximum number that can be represented using
 // returnT i.e. all bits of returnT are set to one. While for false value, we
@@ -47,22 +52,23 @@ ct_barrier([[maybe_unused]] T& val)
 template<typename operandT, typename returnT>
 forceinline constexpr returnT
 ct_eq(const operandT x, const operandT y)
-  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
+  requires(ct_operand<operandT> && std::is_unsigned_v<returnT>)
 {
-  operandT a = x ^ y;
+  using Uop = std::make_unsigned_t<operandT>;
+
+  Uop a = static_cast<Uop>(static_cast<Uop>(x) ^ static_cast<Uop>(y));
   ct_barrier(a);
 
-  const operandT b = static_cast<operandT>(a | static_cast<operandT>(-a));
-  const operandT c = b >> ((sizeof(operandT) * 8) - 1); // select only MSB
+  const Uop b = static_cast<Uop>(a | static_cast<Uop>(-a));
+  const Uop c = static_cast<Uop>(b >> ((sizeof(Uop) * 8) - 1)); // select only MSB
   const returnT d = static_cast<returnT>(c);
   const returnT e = static_cast<returnT>(d - static_cast<returnT>(1));
 
   return e;
 }
 
-// Given two unsigned integers x, y of type operandT ( of bitwidth 8, 16, 32 or
-// 64 ), this routine returns true ( if x != y ) or false ( in case x == y )
-// testing inequality of two values.
+// Given two integers x, y of type operandT, this routine returns true ( if
+// x != y ) or false ( in case x == y ) testing inequality of two values.
 //
 // We represent truth value using maximum number that can be represented using
 // returnT i.e. all bits of returnT are set to one. While for false value, we
@@ -70,15 +76,15 @@ ct_eq(const operandT x, const operandT y)
 template<typename operandT, typename returnT>
 forceinline constexpr returnT
 ct_ne(const operandT x, const operandT y)
-  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
+  requires(ct_operand<operandT> && std::is_unsigned_v<returnT>)
 {
   const returnT z = ct_eq<operandT, returnT>(x, y);
   return static_cast<returnT>(~z); // bit-inverted result of equality check
 }
 
 // Given a branch value br ( of type branchT ) holding either truth or false
-// value and two unsigned integers x, y ( of bitwidth 8, 16, 32 or 64 ), this
-// routine selects x if br is truth value or it returns y.
+// value and two integers x, y of type operandT, this routine selects x if br is
+// truth value or it returns y.
 //
 // Branch value br can have either of two values
 //
@@ -89,14 +95,16 @@ ct_ne(const operandT x, const operandT y)
 template<typename branchT, typename operandT>
 forceinline constexpr operandT
 ct_select(const branchT br, const operandT x, const operandT y)
-  requires(std::is_unsigned_v<branchT> && std::is_unsigned_v<operandT>)
+  requires(std::is_unsigned_v<branchT> && ct_operand<operandT>)
 {
-  const branchT z = br >> ((sizeof(branchT) * 8) - 1); // select MSB
-  operandT w = -static_cast<operandT>(z);              // bw(br) = bw(x) = bw(y)
-  ct_barrier(w);
-  const operandT selected = static_cast<operandT>((x & w) | static_cast<operandT>(y & static_cast<operandT>(~w))); // br ? x : y
+  using Uop = std::make_unsigned_t<operandT>;
 
-  return selected;
+  const branchT z = br >> ((sizeof(branchT) * 8) - 1); // select MSB
+  Uop w = static_cast<Uop>(-static_cast<Uop>(z));
+  ct_barrier(w);
+  const Uop selected = static_cast<Uop>((static_cast<Uop>(x) & w) | static_cast<Uop>(static_cast<Uop>(y) & static_cast<Uop>(~w))); // br ? x : y
+
+  return static_cast<operandT>(selected);
 }
 
 // Given a branch value br ( of type branchT ) holding either truth value (
@@ -104,28 +112,39 @@ ct_select(const branchT br, const operandT x, const operandT y)
 // false value ( represented using value of type branchT s.t. all the bits are
 // set to 0 ), this function swaps values held by x, y if br is truth value.
 // Otherwise both x, y keep their values.
-//
-// branchT and operandT can be unsigned integers of bit width 8, 16, 32 or 64.
 template<typename branchT, typename operandT>
 forceinline constexpr void
 ct_swap(const branchT br, operandT& x, operandT& y)
-  requires(std::is_unsigned_v<branchT> && std::is_unsigned_v<operandT>)
+  requires(std::is_unsigned_v<branchT> && ct_operand<operandT>)
 {
-  operandT mask = static_cast<operandT>(-static_cast<operandT>(br & 1));
+  using Uop = std::make_unsigned_t<operandT>;
+
+  Uop mask = static_cast<Uop>(-static_cast<Uop>(br & 1));
   ct_barrier(mask);
 
-  x = static_cast<operandT>(x ^ static_cast<operandT>(mask & y));
-  y = static_cast<operandT>(y ^ static_cast<operandT>(mask & x));
-  x = static_cast<operandT>(x ^ static_cast<operandT>(mask & y));
+  Uop xu = static_cast<Uop>(x);
+  Uop yu = static_cast<Uop>(y);
+
+  xu = static_cast<Uop>(xu ^ static_cast<Uop>(mask & yu));
+  yu = static_cast<Uop>(yu ^ static_cast<Uop>(mask & xu));
+  xu = static_cast<Uop>(xu ^ static_cast<Uop>(mask & yu));
+
+  x = static_cast<operandT>(xu);
+  y = static_cast<operandT>(yu);
 }
 
-// Given two unsigned integers x, y of type operandT ( of bitwidth 8, 16, 32 or
-// 64 ), this routine returns truth value ( if x <= y ) or false value ( in case
-// x > y ) based on result of lesser than equal comparison test.
+// Given two integers x, y of type operandT, this routine returns truth value (
+// if x <= y ) or false value ( in case x > y ) based on result of lesser than
+// equal comparison test.
 //
 // We represent truth value using maximum number that can be represented using
 // type returnT i.e. all bits of returnT are set to one. While for false value,
 // we set all bits of returnT to zero.
+//
+// For signed operands the sign bit of both values is flipped up front: this maps
+// the signed order monotonically onto the unsigned order, so the unsigned
+// magnitude comparison below yields the correct signed result. The flip is a
+// compile-time decision, so no data-dependent branch is introduced.
 //
 // This implementation collects a lot of inspiration from
 // https://github.com/dalek-cryptography/subtle/blob/bd282be01f1c2da8ab03922e03457102a76a0e05/src/lib.rs#L808-L841
@@ -136,20 +155,26 @@ ct_swap(const branchT br, operandT& x, operandT& y)
 template<typename operandT, typename returnT>
 forceinline constexpr returnT
 ct_le(const operandT x, const operandT y)
-  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
+  requires(ct_operand<operandT> && std::is_unsigned_v<returnT>)
 {
-  const operandT gt_bits = static_cast<operandT>(x & static_cast<operandT>(~y));
-  operandT lt_bits = static_cast<operandT>(static_cast<operandT>(~x) & y);
+  using Uop = std::make_unsigned_t<operandT>;
+  constexpr Uop sign_bit = std::is_signed_v<operandT> ? static_cast<Uop>(Uop{ 1 } << ((sizeof(Uop) * 8) - 1)) : Uop{ 0 };
 
-  for (size_t pow = 1; pow < sizeof(operandT) * 8;) {
-    lt_bits = static_cast<operandT>(lt_bits | static_cast<operandT>(lt_bits >> pow));
+  const Uop xu = static_cast<Uop>(static_cast<Uop>(x) ^ sign_bit);
+  const Uop yu = static_cast<Uop>(static_cast<Uop>(y) ^ sign_bit);
+
+  const Uop gt_bits = static_cast<Uop>(xu & static_cast<Uop>(~yu));
+  Uop lt_bits = static_cast<Uop>(static_cast<Uop>(~xu) & yu);
+
+  for (size_t pow = 1; pow < sizeof(Uop) * 8;) {
+    lt_bits = static_cast<Uop>(lt_bits | static_cast<Uop>(lt_bits >> pow));
     pow += pow;
   }
 
-  operandT bit = static_cast<operandT>(gt_bits & static_cast<operandT>(~lt_bits));
+  Uop bit = static_cast<Uop>(gt_bits & static_cast<Uop>(~lt_bits));
 
-  for (size_t pow = 1; pow < sizeof(operandT) * 8;) {
-    bit = static_cast<operandT>(bit | static_cast<operandT>(bit >> pow));
+  for (size_t pow = 1; pow < sizeof(Uop) * 8;) {
+    bit = static_cast<Uop>(bit | static_cast<Uop>(bit >> pow));
     pow += pow;
   }
 
@@ -158,9 +183,9 @@ ct_le(const operandT x, const operandT y)
   return z;
 }
 
-// Given two unsigned integers x, y of type operandT ( of bitwidth 8, 16, 32 or
-// 64 ), this routine returns truth value ( if x > y ) or false value ( in case
-// x <= y ) based on result of greater than comparison test.
+// Given two integers x, y of type operandT, this routine returns truth value (
+// if x > y ) or false value ( in case x <= y ) based on result of greater than
+// comparison test.
 //
 // We represent truth value using maximum number that can be represented using
 // type returnT i.e. all bits of returnT are set to one. While for false value,
@@ -168,15 +193,15 @@ ct_le(const operandT x, const operandT y)
 template<typename operandT, typename returnT>
 forceinline constexpr returnT
 ct_gt(const operandT x, const operandT y)
-  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
+  requires(ct_operand<operandT> && std::is_unsigned_v<returnT>)
 {
   const returnT z = ct_le<operandT, returnT>(x, y);
   return static_cast<returnT>(~z); // bit-inverted result of <= test
 }
 
-// Given two unsigned integers x, y of type operandT ( of bitwidth 8, 16, 32 or
-// 64 ), this routine returns truth value ( if x >= y ) or false value ( in case
-// x < y ) based on result of greater than equal comparison test.
+// Given two integers x, y of type operandT, this routine returns truth value (
+// if x >= y ) or false value ( in case x < y ) based on result of greater than
+// equal comparison test.
 //
 // We represent truth value using maximum number that can be represented using
 // type returnT i.e. all bits of returnT are set to one. While for false value,
@@ -184,16 +209,16 @@ ct_gt(const operandT x, const operandT y)
 template<typename operandT, typename returnT>
 forceinline constexpr returnT
 ct_ge(const operandT x, const operandT y)
-  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
+  requires(ct_operand<operandT> && std::is_unsigned_v<returnT>)
 {
   const returnT z0 = ct_gt<operandT, returnT>(x, y);
   const returnT z1 = ct_eq<operandT, returnT>(x, y);
   return static_cast<returnT>(z0 | z1); // (x > y) | (x == y)
 }
 
-// Given two unsigned integers x, y of type operandT ( of bitwidth 8, 16, 32 or
-// 64 ), this routine returns truth value ( if x < y ) or false value ( in case
-// x >= y ) based on result of lesser than comparison test.
+// Given two integers x, y of type operandT, this routine returns truth value (
+// if x < y ) or false value ( in case x >= y ) based on result of lesser than
+// comparison test.
 //
 // We represent truth value using maximum number that can be represented using
 // type returnT i.e. all bits of returnT are set to one. While for false value,
@@ -201,7 +226,7 @@ ct_ge(const operandT x, const operandT y)
 template<typename operandT, typename returnT>
 forceinline constexpr returnT
 ct_lt(const operandT x, const operandT y)
-  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
+  requires(ct_operand<operandT> && std::is_unsigned_v<returnT>)
 {
   const returnT z = ct_ge<operandT, returnT>(x, y);
   return static_cast<returnT>(~z); // bit-inverted result of >= test
@@ -222,7 +247,7 @@ ct_zeroize(std::span<T, N> vals)
   }
 }
 
-// Constant-time comparison of two equal-length spans of unsigned integers.
+// Constant-time comparison of two equal-length spans of integers.
 // Returns truth value (all bits set) if the spans are element-wise equal,
 // or false value (all bits zero) otherwise.
 //
@@ -232,7 +257,7 @@ ct_zeroize(std::span<T, N> vals)
 template<typename operandT, typename returnT, size_t N>
 forceinline constexpr returnT
 ct_memcmp(std::span<const operandT, N> lhs, std::span<const operandT, N> rhs)
-  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
+  requires(ct_operand<operandT> && std::is_unsigned_v<returnT>)
 {
   returnT acc = static_cast<returnT>(~returnT{ 0 });
   for (size_t i = 0; i < lhs.size(); i++) {
@@ -258,7 +283,7 @@ ct_memcmp(std::span<const operandT, N> lhs, std::span<const operandT, N> rhs)
 template<typename branchT, typename operandT, size_t N>
 forceinline constexpr void
 ct_conditional_memcpy(const branchT br, std::span<operandT, N> dst, std::span<const operandT, N> src)
-  requires(std::is_unsigned_v<branchT> && std::is_unsigned_v<operandT>)
+  requires(std::is_unsigned_v<branchT> && ct_operand<operandT>)
 {
   for (size_t i = 0; i < dst.size(); i++) {
     dst[i] = ct_select<branchT, operandT>(br, src[i], dst[i]);
@@ -275,12 +300,14 @@ ct_conditional_memcpy(const branchT br, std::span<operandT, N> dst, std::span<co
 template<typename indexT, typename operandT, size_t N>
 forceinline constexpr operandT
 ct_lookup(const indexT idx, std::span<const operandT, N> table)
-  requires(std::is_unsigned_v<indexT> && std::is_unsigned_v<operandT>)
+  requires(std::is_unsigned_v<indexT> && ct_operand<operandT>)
 {
+  using Umask = std::make_unsigned_t<operandT>;
+
   operandT result = operandT{ 0 };
   for (size_t j = 0; j < table.size(); j++) {
-    const operandT mask = ct_eq<indexT, operandT>(static_cast<indexT>(j), idx);
-    result = ct_select<operandT, operandT>(mask, table[j], result);
+    const Umask mask = ct_eq<indexT, Umask>(static_cast<indexT>(j), idx);
+    result = ct_select<Umask, operandT>(mask, table[j], result);
   }
 
   return result;

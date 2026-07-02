@@ -1,22 +1,58 @@
 #include "test_helper.hpp"
 #include <gtest/gtest.h>
 
-using TypeCombinations = ::testing::Types<std::pair<uint8_t, uint8_t>,
-                                          std::pair<uint16_t, uint8_t>,
-                                          std::pair<uint32_t, uint8_t>,
-                                          std::pair<uint64_t, uint8_t>,
-                                          std::pair<uint8_t, uint16_t>,
-                                          std::pair<uint16_t, uint16_t>,
-                                          std::pair<uint32_t, uint16_t>,
-                                          std::pair<uint64_t, uint16_t>,
-                                          std::pair<uint8_t, uint32_t>,
-                                          std::pair<uint16_t, uint32_t>,
-                                          std::pair<uint32_t, uint32_t>,
-                                          std::pair<uint64_t, uint32_t>,
-                                          std::pair<uint8_t, uint64_t>,
-                                          std::pair<uint16_t, uint64_t>,
-                                          std::pair<uint32_t, uint64_t>,
-                                          std::pair<uint64_t, uint64_t>>;
+using TypeCombinations = ::testing::Types<
+  // signed
+  std::pair<int8_t, uint8_t>,
+  std::pair<int16_t, uint8_t>,
+  std::pair<int32_t, uint8_t>,
+  std::pair<int64_t, uint8_t>,
+  std::pair<int8_t, uint16_t>,
+  std::pair<int16_t, uint16_t>,
+  std::pair<int32_t, uint16_t>,
+  std::pair<int64_t, uint16_t>,
+  std::pair<int8_t, uint32_t>,
+  std::pair<int16_t, uint32_t>,
+  std::pair<int32_t, uint32_t>,
+  std::pair<int64_t, uint32_t>,
+  std::pair<int8_t, uint64_t>,
+  std::pair<int16_t, uint64_t>,
+  std::pair<int32_t, uint64_t>,
+  std::pair<int64_t, uint64_t>,
+  // unsigned
+  std::pair<uint8_t, uint8_t>,
+  std::pair<uint16_t, uint8_t>,
+  std::pair<uint32_t, uint8_t>,
+  std::pair<uint64_t, uint8_t>,
+  std::pair<uint8_t, uint16_t>,
+  std::pair<uint16_t, uint16_t>,
+  std::pair<uint32_t, uint16_t>,
+  std::pair<uint64_t, uint16_t>,
+  std::pair<uint8_t, uint32_t>,
+  std::pair<uint16_t, uint32_t>,
+  std::pair<uint32_t, uint32_t>,
+  std::pair<uint64_t, uint32_t>,
+  std::pair<uint8_t, uint64_t>,
+  std::pair<uint16_t, uint64_t>,
+  std::pair<uint32_t, uint64_t>,
+  std::pair<uint64_t, uint64_t>,
+  // char
+  std::pair<char, uint8_t>,
+  std::pair<char8_t, uint8_t>,
+  std::pair<char16_t, uint8_t>,
+  std::pair<char32_t, uint8_t>,
+  std::pair<char, uint16_t>,
+  std::pair<char8_t, uint16_t>,
+  std::pair<char16_t, uint16_t>,
+  std::pair<char32_t, uint16_t>,
+  std::pair<char, uint32_t>,
+  std::pair<char8_t, uint32_t>,
+  std::pair<char16_t, uint32_t>,
+  std::pair<char32_t, uint32_t>,
+  std::pair<char, uint64_t>,
+  std::pair<char8_t, uint64_t>,
+  std::pair<char16_t, uint64_t>,
+  std::pair<char32_t, uint64_t>>;
 
 // --- ct_eq tests ---
 
@@ -176,4 +212,68 @@ TYPED_TEST(CtLtTest, Correctness)
   using returnT = typename TypeParam::second_type;
 
   test_subtle::test_ct_lt<operandT, returnT>();
+}
+
+// --- ct_zeroize tests ---
+
+using ElementTypes =
+  ::testing::Types<uint8_t, uint16_t, uint32_t, uint64_t, int8_t, int16_t, int32_t, int64_t, char, unsigned char, signed char, char8_t, char16_t, char32_t, std::byte>;
+
+template<typename T>
+class CtZeroizeTest : public ::testing::Test
+{};
+
+TYPED_TEST_SUITE(CtZeroizeTest, ElementTypes);
+
+TYPED_TEST(CtZeroizeTest, Correctness)
+{
+  test_subtle::test_ct_zeroize<TypeParam>();
+}
+
+// --- ct_memcmp tests ---
+
+template<typename T>
+class CtMemcmpTest : public ::testing::Test
+{};
+
+TYPED_TEST_SUITE(CtMemcmpTest, TypeCombinations);
+
+TYPED_TEST(CtMemcmpTest, Correctness)
+{
+  using operandT = typename TypeParam::first_type;
+  using returnT = typename TypeParam::second_type;
+
+  test_subtle::test_ct_memcmp<operandT, returnT>();
+}
+
+// --- ct_conditional_memcpy tests ---
+
+template<typename T>
+class CtConditionalMemcpyTest : public ::testing::Test
+{};
+
+TYPED_TEST_SUITE(CtConditionalMemcpyTest, TypeCombinations);
+
+TYPED_TEST(CtConditionalMemcpyTest, Correctness)
+{
+  using operandT = typename TypeParam::first_type;
+  using branchT = typename TypeParam::second_type;
+
+  test_subtle::test_ct_conditional_memcpy<operandT, branchT>();
+}
+
+// --- ct_lookup tests ---
+
+template<typename T>
+class CtLookupTest : public ::testing::Test
+{};
+
+TYPED_TEST_SUITE(CtLookupTest, TypeCombinations);
+
+TYPED_TEST(CtLookupTest, Correctness)
+{
+  using operandT = typename TypeParam::first_type;
+  using indexT = typename TypeParam::second_type;
+
+  test_subtle::test_ct_lookup<operandT, indexT>();
 }

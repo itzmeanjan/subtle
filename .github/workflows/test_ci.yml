@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ "master" ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -38,16 +42,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
-      max-parallel: 2
       matrix:
-        os: [
-          ubuntu-latest # x86_64
-        ]
+        os: [ubuntu-latest]
         compiler: [g++, clang++]
         sanitizer: [none, asan, ubsan]
         build_type: [Debug, Release]
         include:
-          - os: macos-latest # aarch64
+          - os: macos-latest
             compiler: clang++
             sanitizer: none
             build_type: Release
@@ -76,8 +77,93 @@ jobs:
         run: ctest --test-dir build --output-on-failure -j
 
       - name: Run Examples
-        if: ${{ matrix.sanitizer == 'none' && matrix.build_type == 'Release' }}
+        if: ${{ matrix.sanitizer == 'none' }}
         run: |
           ./build/ct_swap_example
           ./build/ct_compare_example
           ./build/ct_copy_example
+
+  msan:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        build_type: [Debug, Release, RelWithDebInfo, MinSizeRel]
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install libc++
+        run: sudo apt-get update && sudo apt-get install -y libc++-dev libc++abi-dev
+
+      - name: Configure
+        run: >
+          cmake -B build
+          -DCMAKE_CXX_COMPILER=clang++
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DSUBTLE_BUILD_TESTS=ON
+          -DSUBTLE_MSAN=ON
+
+      - name: Build
+        run: cmake --build build -j
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure -j
+
+  valgrind:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        compiler: [g++, clang++]
+        build_type: [Debug, Release, RelWithDebInfo, MinSizeRel]
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Valgrind
+        run: sudo apt-get update && sudo apt-get install -y valgrind
+
+      - name: Configure
+        run: >
+          cmake -B build
+          -DCMAKE_CXX_COMPILER=${{ matrix.compiler }}
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DSUBTLE_BUILD_TESTS=ON
+          -DSUBTLE_VALGRIND=ON
+
+      - name: Build
+        run: cmake --build build -j
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure -j
+
+  binsec:
+    runs-on: ubuntu-latest
+    container:
+      image: binsec/binsec:latest
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        compiler: [g++, clang++]
+        build_type: [Release, RelWithDebInfo, MinSizeRel]
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y cmake g++ clang make
+
+      - name: Configure
+        run: >
+          cmake -B build
+          -DCMAKE_CXX_COMPILER=${{ matrix.compiler }}
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DSUBTLE_BUILD_TESTS=ON
+          -DSUBTLE_BINSEC=ON
+
+      - name: Build
+        run: cmake --build build -j
+
+      - name: Binsec Verify
+        run: cmake --build build --target binsec_verify

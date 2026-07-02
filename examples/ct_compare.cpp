@@ -40,7 +40,7 @@ ct_compare(const std::array<uint8_t, TAG_LEN>& tag_a, const std::array<uint8_t, 
   uint32_t res = -1U;
 
   for (size_t i = 0; i < TAG_LEN; i++) {
-    res &= subtle::ct_eq<uint8_t, uint32_t>(tag_a.at(i), tag_b.at(i));
+    res &= subtle::ct_eq<uint8_t, uint32_t>(tag_a[i], tag_b[i]);
   }
 
   return res;

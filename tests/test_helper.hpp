@@ -84,82 +84,48 @@ test_ct_select()
   }
 }
 
-// Test that constant-time swap with truth value actually swaps.
 template<typename operandT, typename returnT>
 void
-test_ct_swap_truth()
-  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<returnT>)
-{
-  constexpr returnT truthv = static_cast<returnT>(~returnT{ 0 });
-
-  std::random_device rd;
-  std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
-
-  for (size_t i = 0; i < ITERATIONS; i++) {
-    operandT x = dis(gen);
-    operandT y = dis(gen);
-
-    const auto tmpx = x;
-    const auto tmpy = y;
-
-    subtle::ct_swap(truthv, x, y);
-
-    ASSERT_EQ(tmpx, y);
-    ASSERT_EQ(tmpy, x);
-  }
-}
-
-// Test that two consecutive truth-swaps round-trip back to original values.
-template<typename operandT, typename returnT>
-void
-test_ct_swap_roundtrip()
-  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<returnT>)
-{
-  constexpr returnT truthv = static_cast<returnT>(~returnT{ 0 });
-
-  std::random_device rd;
-  std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
-
-  for (size_t i = 0; i < ITERATIONS; i++) {
-    operandT x = dis(gen);
-    operandT y = dis(gen);
-
-    const auto tmpx = x;
-    const auto tmpy = y;
-
-    subtle::ct_swap(truthv, x, y);
-    subtle::ct_swap(truthv, x, y);
-
-    ASSERT_EQ(tmpx, x);
-    ASSERT_EQ(tmpy, y);
-  }
-}
-
-// Test that constant-time swap with false value is a no-op.
-template<typename operandT, typename returnT>
-void
-test_ct_swap_false()
+check_ct_swap_round(std::mt19937_64& gen)
   requires(subtle::ct_operand<operandT> && std::is_unsigned_v<returnT>)
 {
   constexpr returnT falsev = 0;
+  constexpr returnT truthv = static_cast<returnT>(~falsev);
 
-  std::random_device rd;
-  std::mt19937_64 gen(rd());
   std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
 
+  operandT x = dis(gen);
+  operandT y = dis(gen);
+
+  const auto orig_x = x;
+  const auto orig_y = y;
+
+  // Values are exchanged.
+  subtle::ct_swap(truthv, x, y);
+  ASSERT_EQ(x, orig_y);
+  ASSERT_EQ(y, orig_x);
+
+  // Values are left unchanged.
+  subtle::ct_swap(falsev, x, y);
+  ASSERT_EQ(x, orig_y);
+  ASSERT_EQ(y, orig_x);
+
+  // Values are exchanged back to the originals.
+  subtle::ct_swap(truthv, x, y);
+  ASSERT_EQ(x, orig_x);
+  ASSERT_EQ(y, orig_y);
+}
+
+template<typename operandT, typename returnT>
+void
+test_ct_swap()
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<returnT>)
+{
+  std::random_device rd;
+  std::mt19937_64 gen(rd());
+
   for (size_t i = 0; i < ITERATIONS; i++) {
-    operandT x = dis(gen);
-    operandT y = dis(gen);
-
-    const auto tmpx = x;
-    const auto tmpy = y;
-
-    subtle::ct_swap(falsev, x, y); // x, y = x, y (no-op)
-
-    ASSERT_EQ(tmpx, x);
-    ASSERT_EQ(tmpy, y);
+    check_ct_swap_round<operandT, returnT>(gen);
   }
 }
 
@@ -198,7 +164,7 @@ check_ct_swap_span_round(std::mt19937_64& gen)
   ASSERT_EQ(x, orig_y);
   ASSERT_EQ(y, orig_x);
 
-  // Buffers are exchanged.
+  // Buffers are exchanged back to the originals.
   subtle::ct_swap<branchT, operandT>(truthv, std::span<operandT>(x), std::span<operandT>(y));
   ASSERT_EQ(x, orig_x);
   ASSERT_EQ(y, orig_y);

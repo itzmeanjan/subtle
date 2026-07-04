@@ -90,11 +90,14 @@ These operations work over `uint8_t`, `uint16_t`, `uint32_t` and `uint64_t`. Thi
 | `SUBTLE_FETCH_DEPS` | Fetch missing dependencies (GTest, Benchmark) | `OFF` |
 | `SUBTLE_ASAN` | Enable AddressSanitizer | `OFF` |
 | `SUBTLE_UBSAN` | Enable UndefinedBehaviorSanitizer | `OFF` |
+| `SUBTLE_MSAN` | Enable MemorySanitizer for constant-time verification (Clang only) | `OFF` |
+| `SUBTLE_VALGRIND` | Enable Valgrind constant-time verification (Linux only) | `OFF` |
+| `SUBTLE_BINSEC` | Build binary for Binsec constant-time verification | `OFF` |
 | `SUBTLE_NATIVE_OPT` | Enable `-march=native` (not suitable for cross-compilation) | `OFF` |
 | `SUBTLE_ENABLE_LTO` | Enable Interprocedural Optimization (LTO) | `ON` |
 
 > [!NOTE]
-> `SUBTLE_ASAN`, `SUBTLE_UBSAN`, `SUBTLE_NATIVE_OPT` and `SUBTLE_ENABLE_LTO` are only available when building `subtle` as the top-level project. They are not exposed when consumed via `FetchContent` or `add_subdirectory`.
+> The options above (except `SUBTLE_BUILD_*` and `SUBTLE_FETCH_DEPS`) are only available when building `subtle` as the top-level project. They are not exposed when consumed via `FetchContent` or `add_subdirectory`.
 
 ### Testing
 
@@ -125,6 +128,51 @@ cmake -B build -DCMAKE_BUILD_TYPE=Debug -DSUBTLE_BUILD_TESTS=ON -DSUBTLE_FETCH_D
 cmake --build build -j
 ctest --test-dir build -j --output-on-failure
 ```
+
+### Constant-Timeness Verification
+
+Correctness tests only check that the functions compute the right values — they do **not** check constant-timeness. For that, `subtle` ships three independent verification tools, each behind its own CMake option. They are mutually exclusive: enable exactly one at a time, and none of them link Google Test (so `-DSUBTLE_FETCH_DEPS=ON` is not needed).
+
+The dynamic tools (MSan, Valgrind) mark secret inputs as poisoned and run the constant-time functions; any secret-dependent branch or memory access is reported as a use of poisoned data. Binsec goes further and formally proves constant-timeness over the emitted binary via symbolic execution. See [CT_VERIFICATION_REPORT.md](./CT_VERIFICATION_REPORT.md) for the reasoning behind this layered approach.
+
+#### MemorySanitizer (Clang + libc++ only)
+
+Fast, CI-friendly taint tracking. Requires `clang++` and `libc++` (install `libc++-dev libc++abi-dev` on Debian/Ubuntu).
+
+```bash
+cmake -B build -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release -DSUBTLE_BUILD_TESTS=ON -DSUBTLE_MSAN=ON -DSUBTLE_ENABLE_LTO=OFF
+cmake --build build -j
+ctest --test-dir build --output-on-failure -j
+```
+
+#### Valgrind (Linux only)
+
+Complementary to MSan; works with either `g++` or `clang++`. Requires `valgrind` on `PATH`. The `ctest` run drives the binary under Valgrind's memcheck automatically.
+
+```bash
+cmake -B build -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=Release -DSUBTLE_BUILD_TESTS=ON -DSUBTLE_VALGRIND=ON -DSUBTLE_ENABLE_LTO=OFF
+cmake --build build -j
+ctest --test-dir build --output-on-failure -j
+```
+
+#### Binsec (binary-level formal verification)
+
+Symbolic execution of the final statically-linked binary.
+
+```bash
+bash tests/scripts/run_docker_binsec.sh
+```
+
+If you already have `binsec` on your `PATH`, you can instead build the target and invoke the verifier directly:
+
+```bash
+cmake -B build -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=Release -DSUBTLE_BUILD_TESTS=ON -DSUBTLE_BINSEC=ON
+cmake --build build -j
+cmake --build build --target binsec_verify
+```
+
+> [!NOTE]
+> Binsec is not run at `Debug` (`-O0`): without optimization the compiler doesn't lower the bitwise patterns into branchless code, so it reports branches that only exist at `-O0`. Use `Release`, `RelWithDebInfo` or `MinSizeRel`.
 
 ### Benchmarking
 

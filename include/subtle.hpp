@@ -2,6 +2,7 @@
 #include "forceinline.hpp"
 #include <algorithm>
 #include <cstddef>
+#include <limits>
 #include <span>
 #include <type_traits>
 
@@ -14,7 +15,7 @@
 #endif
 #endif
 
-// Constant-time comparison and selection of integer values.
+// Constant-time operations on integer values.
 namespace subtle {
 
 // An operand type accepted by the constant-time routines below: any standard
@@ -60,7 +61,7 @@ ct_eq(const operandT x, const operandT y)
   ct_barrier(a);
 
   const Uop b = static_cast<Uop>(a | static_cast<Uop>(-a));
-  const Uop c = static_cast<Uop>(b >> ((sizeof(Uop) * 8) - 1)); // select only MSB
+  const Uop c = static_cast<Uop>(b >> (std::numeric_limits<Uop>::digits - 1)); // select only MSB
   const returnT d = static_cast<returnT>(c);
   const returnT e = static_cast<returnT>(d - static_cast<returnT>(1));
 
@@ -99,7 +100,7 @@ ct_select(const branchT br, const operandT x, const operandT y)
 {
   using Uop = std::make_unsigned_t<operandT>;
 
-  const branchT z = br >> ((sizeof(branchT) * 8) - 1); // select MSB
+  const branchT z = br >> (std::numeric_limits<branchT>::digits - 1); // select MSB
   Uop w = static_cast<Uop>(-static_cast<Uop>(z));
   ct_barrier(w);
   const Uop selected = static_cast<Uop>((static_cast<Uop>(x) & w) | static_cast<Uop>(static_cast<Uop>(y) & static_cast<Uop>(~w))); // br ? x : y
@@ -158,7 +159,7 @@ ct_le(const operandT x, const operandT y)
   requires(ct_operand<operandT> && std::is_unsigned_v<returnT>)
 {
   using Uop = std::make_unsigned_t<operandT>;
-  constexpr Uop sign_bit = std::is_signed_v<operandT> ? static_cast<Uop>(Uop{ 1 } << ((sizeof(Uop) * 8) - 1)) : Uop{ 0 };
+  constexpr Uop sign_bit = std::is_signed_v<operandT> ? static_cast<Uop>(Uop{ 1 } << (std::numeric_limits<Uop>::digits - 1)) : Uop{ 0 };
 
   const Uop xu = static_cast<Uop>(static_cast<Uop>(x) ^ sign_bit);
   const Uop yu = static_cast<Uop>(static_cast<Uop>(y) ^ sign_bit);
@@ -166,14 +167,14 @@ ct_le(const operandT x, const operandT y)
   const Uop gt_bits = static_cast<Uop>(xu & static_cast<Uop>(~yu));
   Uop lt_bits = static_cast<Uop>(static_cast<Uop>(~xu) & yu);
 
-  for (size_t pow = 1; pow < sizeof(Uop) * 8;) {
+  for (size_t pow = 1; pow < std::numeric_limits<Uop>::digits;) {
     lt_bits = static_cast<Uop>(lt_bits | static_cast<Uop>(lt_bits >> pow));
     pow += pow;
   }
 
   Uop bit = static_cast<Uop>(gt_bits & static_cast<Uop>(~lt_bits));
 
-  for (size_t pow = 1; pow < sizeof(Uop) * 8;) {
+  for (size_t pow = 1; pow < std::numeric_limits<Uop>::digits;) {
     bit = static_cast<Uop>(bit | static_cast<Uop>(bit >> pow));
     pow += pow;
   }
@@ -270,7 +271,7 @@ ct_memcmp(std::span<const operandT, N> lhs, std::span<const operandT, N> rhs)
 // Given a branch value br ( of type branchT ) holding either truth value (
 // represented using value of type branchT s.t. all the bits are set to 1 ) or
 // false value ( represented using value of type branchT s.t. all the bits are
-// set to 0 ) and two equal-length spans dst, src of unsigned integers, this routine
+// set to 0 ) and two equal-length spans dst, src of integers, this routine
 // overwrites contents of dst with those of src if br is truth value. Otherwise dst
 // retains its original contents.
 //
@@ -290,10 +291,9 @@ ct_conditional_memcpy(const branchT br, std::span<operandT, N> dst, std::span<co
   }
 }
 
-// Given a secret index idx ( of type indexT ) and a span of unsigned integers
-// table, this routine returns table[idx] without ever using idx to address
-// memory -- defeating cache-timing side channels that a plain table[idx] would
-// expose.
+// Given a secret index idx ( of type indexT ) and a table of integers,
+// this routine returns table[idx] without ever using idx to address
+// memory -- defeating cache-timing side channels that a plain table[idx] would expose.
 //
 // idx is expected to be in range [0, table.size()); an out-of-range idx matches
 // no slot and yields a zero result.

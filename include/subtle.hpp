@@ -83,6 +83,20 @@ ct_ne(const operandT x, const operandT y)
   return static_cast<returnT>(~z); // bit-inverted result of equality check
 }
 
+// Given an integer x of type operandT, this routine returns truth value ( if
+// x == 0 ) or false value ( in case x != 0 ) testing whether x is zero.
+//
+// We represent truth value using maximum number that can be represented using
+// returnT i.e. all bits of returnT are set to one. While for false value, we
+// set all bits of returnT to zero.
+template<typename operandT, typename returnT>
+forceinline constexpr returnT
+ct_is_zero(const operandT x)
+  requires(ct_operand<operandT> && std::is_unsigned_v<returnT>)
+{
+  return ct_eq<operandT, returnT>(x, operandT{ 0 });
+}
+
 // Given a branch value br ( of type branchT ) holding either truth or false
 // value and two integers x, y of type operandT, this routine selects x if br is
 // truth value or it returns y.

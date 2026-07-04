@@ -87,6 +87,24 @@ verify_ct_ne()
 
 template<typename operandT, typename returnT>
 void
+verify_ct_is_zero()
+{
+  std::random_device rd;
+  std::mt19937_64 gen(rd());
+  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
+
+  for (size_t i = 0; i < ITERATIONS; i++) {
+    operandT x = dis(gen);
+
+    CT_POISON(&x, sizeof(x));
+
+    volatile returnT sink = subtle::ct_is_zero<operandT, returnT>(x);
+    static_cast<void>(sink);
+  }
+}
+
+template<typename operandT, typename returnT>
+void
 verify_ct_le()
 {
   std::random_device rd;
@@ -426,6 +444,12 @@ struct ne_wrapper
 };
 
 template<typename OpT, typename RetT>
+struct is_zero_wrapper
+{
+  void operator()() { verify_ct_is_zero<OpT, RetT>(); }
+};
+
+template<typename OpT, typename RetT>
 struct le_wrapper
 {
   void operator()() { verify_ct_le<OpT, RetT>(); }
@@ -503,6 +527,9 @@ main()
 
   std::puts("  ct_ne...");
   verify_all_types<ne_wrapper>();
+
+  std::puts("  ct_is_zero...");
+  verify_all_types<is_zero_wrapper>();
 
   std::puts("  ct_le...");
   verify_all_types<le_wrapper>();

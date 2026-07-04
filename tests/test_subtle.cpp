@@ -86,6 +86,22 @@ TYPED_TEST(CtNeTest, Correctness)
   test_subtle::test_ct_ne<operandT, returnT>();
 }
 
+// --- ct_is_zero tests ---
+
+template<typename T>
+class CtIsZeroTest : public ::testing::Test
+{};
+
+TYPED_TEST_SUITE(CtIsZeroTest, TypeCombinations);
+
+TYPED_TEST(CtIsZeroTest, Correctness)
+{
+  using operandT = typename TypeParam::first_type;
+  using returnT = typename TypeParam::second_type;
+
+  test_subtle::test_ct_is_zero<operandT, returnT>();
+}
+
 // --- ct_select tests ---
 
 template<typename T>

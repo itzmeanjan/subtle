@@ -61,6 +61,28 @@ test_ct_ne()
   }
 }
 
+// Test functional correctness of constant-time is-zero operation over integer
+// types, checking result against a native comparison against zero.
+template<typename operandT, typename returnT>
+void
+test_ct_is_zero()
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<returnT>)
+{
+  constexpr returnT truthv = static_cast<returnT>(~returnT{ 0 });
+  constexpr returnT falsev = 0;
+
+  std::random_device rd;
+  std::mt19937_64 gen(rd());
+  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
+
+  for (size_t i = 0; i < ITERATIONS; i++) {
+    const operandT x = dis(gen);
+
+    const returnT z = subtle::ct_is_zero<operandT, returnT>(x);
+    ASSERT_EQ(z, (x == operandT{ 0 } ? truthv : falsev));
+  }
+}
+
 // Test functional correctness of constant-time conditional selection operation
 // over unsigned integer types.
 template<typename operandT, typename returnT>

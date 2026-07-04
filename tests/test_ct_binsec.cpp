@@ -128,6 +128,33 @@ binsec_ct_ne_u64()
   _exit(0);
 }
 
+// --- ct_is_zero ---
+
+extern "C" void
+binsec_ct_is_zero_u8()
+{
+  sink8 = subtle::ct_is_zero<uint8_t, uint8_t>(secret_x8);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_is_zero_u16()
+{
+  sink16 = subtle::ct_is_zero<uint16_t, uint16_t>(secret_x16);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_is_zero_u32()
+{
+  sink32 = subtle::ct_is_zero<uint32_t, uint32_t>(secret_x32);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_is_zero_u64()
+{
+  sink64 = subtle::ct_is_zero<uint64_t, uint64_t>(secret_x64);
+  _exit(0);
+}
+
 // --- ct_le ---
 
 extern "C" void
@@ -390,6 +417,31 @@ extern "C" void
 binsec_ct_ne_i64()
 {
   sink64 = subtle::ct_ne<int64_t, uint64_t>(secret_ix64, secret_iy64);
+  _exit(0);
+}
+
+extern "C" void
+binsec_ct_is_zero_i8()
+{
+  sink8 = subtle::ct_is_zero<int8_t, uint8_t>(secret_ix8);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_is_zero_i16()
+{
+  sink16 = subtle::ct_is_zero<int16_t, uint16_t>(secret_ix16);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_is_zero_i32()
+{
+  sink32 = subtle::ct_is_zero<int32_t, uint32_t>(secret_ix32);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_is_zero_i64()
+{
+  sink64 = subtle::ct_is_zero<int64_t, uint64_t>(secret_ix64);
   _exit(0);
 }
 

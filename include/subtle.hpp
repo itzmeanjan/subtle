@@ -343,6 +343,24 @@ ct_conditional_memcpy(const branchT br, std::span<operandT, N> dst, std::span<co
   }
 }
 
+// Given a branch value br ( of type branchT ) holding either truth value (
+// represented using value of type branchT s.t. all the bits are set to 1 ) or
+// false value ( represented using value of type branchT s.t. all the bits are
+// set to 0 ), a span dst of integers and a fill value val, this routine
+// overwrites every element of dst with val if br is truth value. Otherwise dst
+// retains its original contents.
+//
+// If br takes any value other than these two, this is an undefined behaviour !
+template<typename branchT, typename operandT, size_t N>
+forceinline constexpr void
+ct_conditional_memset(const branchT br, std::span<operandT, N> dst, const operandT val)
+  requires(std::is_unsigned_v<branchT> && ct_operand<operandT>)
+{
+  for (size_t i = 0; i < dst.size(); i++) {
+    dst[i] = ct_select<branchT, operandT>(br, val, dst[i]);
+  }
+}
+
 // Given a secret index idx ( of type indexT ) and a table of integers,
 // this routine returns table[idx] without ever using idx to address
 // memory -- defeating cache-timing side channels that a plain table[idx] would expose.

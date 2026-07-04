@@ -49,6 +49,8 @@ for func in $FUNCTIONS; do
   # Determine which globals are secret, per operation family.
   if [[ "$func" == *_lookup_* ]]; then
     secrets="secret_x${width}, ${sbuf1}"
+  elif [[ "$func" == *_swap_span_* ]]; then
+    secrets="${sbuf1}, ${sbuf2}, secret_br${width}"
   elif [[ "$func" == *_conditional_memcpy_* ]]; then
     secrets="${sbuf1}, ${sbuf2}, secret_br${width}"
   elif [[ "$func" == *_memcmp_* ]]; then

@@ -163,6 +163,60 @@ test_ct_swap_false()
   }
 }
 
+template<typename operandT, typename branchT>
+void
+check_ct_swap_span_round(std::mt19937_64& gen)
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<branchT>)
+{
+  constexpr branchT falsev = 0;
+  constexpr branchT truthv = static_cast<branchT>(~falsev);
+
+  constexpr size_t MIN_SIZE = 0;
+  constexpr size_t MAX_SIZE = 1024;
+
+  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
+  std::uniform_int_distribution<size_t> size_dis(MIN_SIZE, MAX_SIZE);
+
+  const size_t len = size_dis(gen);
+
+  std::vector<operandT> x(len);
+  std::vector<operandT> y(len);
+
+  std::ranges::generate(x, [&]() { return dis(gen); });
+  std::ranges::generate(y, [&]() { return dis(gen); });
+
+  const std::vector<operandT> orig_x = x;
+  const std::vector<operandT> orig_y = y;
+
+  // Buffers are exchanged
+  subtle::ct_swap<branchT, operandT>(truthv, std::span<operandT>(x), std::span<operandT>(y));
+  ASSERT_EQ(x, orig_y);
+  ASSERT_EQ(y, orig_x);
+
+  // Buffers are left unchanged.
+  subtle::ct_swap<branchT, operandT>(falsev, std::span<operandT>(x), std::span<operandT>(y));
+  ASSERT_EQ(x, orig_y);
+  ASSERT_EQ(y, orig_x);
+
+  // Buffers are exchanged.
+  subtle::ct_swap<branchT, operandT>(truthv, std::span<operandT>(x), std::span<operandT>(y));
+  ASSERT_EQ(x, orig_x);
+  ASSERT_EQ(y, orig_y);
+}
+
+template<typename operandT, typename branchT>
+void
+test_ct_swap_span()
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<branchT>)
+{
+  std::random_device rd;
+  std::mt19937_64 gen(rd());
+
+  for (size_t i = 0; i < ITERATIONS; i++) {
+    check_ct_swap_span_round<operandT, branchT>(gen);
+  }
+}
+
 // Test functional correctness of constant-time lesser than equality operation
 // over unsigned integer types, checking result against native comparison op.
 template<typename operandT, typename returnT>

@@ -448,6 +448,35 @@ binsec_ct_swap_i64()
 }
 
 extern "C" void
+binsec_ct_swap_span_i8()
+{
+  subtle::ct_swap<uint8_t, int8_t>(secret_br8, std::span<int8_t, SECRET_BUF_LEN>(secret_buf1_i8), std::span<int8_t, SECRET_BUF_LEN>(secret_buf2_i8));
+  sink8 = static_cast<uint8_t>(secret_buf1_i8[0]);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_swap_span_i16()
+{
+  subtle::ct_swap<uint16_t, int16_t>(secret_br16, std::span<int16_t, SECRET_BUF_LEN>(secret_buf1_i16), std::span<int16_t, SECRET_BUF_LEN>(secret_buf2_i16));
+  sink16 = static_cast<uint16_t>(secret_buf1_i16[0]);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_swap_span_i32()
+{
+  subtle::ct_swap<uint32_t, int32_t>(secret_br32, std::span<int32_t, SECRET_BUF_LEN>(secret_buf1_i32), std::span<int32_t, SECRET_BUF_LEN>(secret_buf2_i32));
+  sink32 = static_cast<uint32_t>(secret_buf1_i32[0]);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_swap_span_i64()
+{
+  subtle::ct_swap<uint64_t, int64_t>(secret_br64, std::span<int64_t, SECRET_BUF_LEN>(secret_buf1_i64), std::span<int64_t, SECRET_BUF_LEN>(secret_buf2_i64));
+  sink64 = static_cast<uint64_t>(secret_buf1_i64[0]);
+  _exit(0);
+}
+
+extern "C" void
 binsec_ct_memcmp_i8()
 {
   sink8 = subtle::ct_memcmp<int8_t, uint8_t>(std::span<const int8_t, SECRET_BUF_LEN>(secret_buf1_i8), std::span<const int8_t, SECRET_BUF_LEN>(secret_buf2_i8));
@@ -587,6 +616,40 @@ binsec_ct_swap_u64()
 {
   subtle::ct_swap<uint64_t, uint64_t>(secret_br64, secret_x64, secret_y64);
   sink64 = secret_x64;
+  _exit(0);
+}
+
+// --- ct_swap span overload (both buffers and br are all secret; buffers modified in place) ---
+
+extern "C" void
+binsec_ct_swap_span_u8()
+{
+  subtle::ct_swap<uint8_t, uint8_t>(secret_br8, std::span<uint8_t, SECRET_BUF_LEN>(secret_buf1_u8), std::span<uint8_t, SECRET_BUF_LEN>(secret_buf2_u8));
+  sink8 = secret_buf1_u8[0];
+  _exit(0);
+}
+
+extern "C" void
+binsec_ct_swap_span_u16()
+{
+  subtle::ct_swap<uint16_t, uint16_t>(secret_br16, std::span<uint16_t, SECRET_BUF_LEN>(secret_buf1_u16), std::span<uint16_t, SECRET_BUF_LEN>(secret_buf2_u16));
+  sink16 = secret_buf1_u16[0];
+  _exit(0);
+}
+
+extern "C" void
+binsec_ct_swap_span_u32()
+{
+  subtle::ct_swap<uint32_t, uint32_t>(secret_br32, std::span<uint32_t, SECRET_BUF_LEN>(secret_buf1_u32), std::span<uint32_t, SECRET_BUF_LEN>(secret_buf2_u32));
+  sink32 = secret_buf1_u32[0];
+  _exit(0);
+}
+
+extern "C" void
+binsec_ct_swap_span_u64()
+{
+  subtle::ct_swap<uint64_t, uint64_t>(secret_br64, std::span<uint64_t, SECRET_BUF_LEN>(secret_buf1_u64), std::span<uint64_t, SECRET_BUF_LEN>(secret_buf2_u64));
+  sink64 = secret_buf1_u64[0];
   _exit(0);
 }
 

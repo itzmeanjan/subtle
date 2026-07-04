@@ -134,6 +134,24 @@ ct_swap(const branchT br, operandT& x, operandT& y)
   y = static_cast<operandT>(yu);
 }
 
+// Given a branch value br ( of type branchT ) holding either truth value (
+// represented using value of type branchT s.t. all the bits are set to 1 ) or
+// false value ( represented using value of type branchT s.t. all the bits are
+// set to 0 ) and two equal-length spans x, y of integers, this routine swaps the
+// contents of x and y element-wise if br is truth value. Otherwise both spans
+// keep their contents.
+//
+// If br takes any value other than these two, this is an undefined behaviour !
+template<typename branchT, typename operandT, size_t N>
+forceinline constexpr void
+ct_swap(const branchT br, std::span<operandT, N> x, std::span<operandT, N> y)
+  requires(std::is_unsigned_v<branchT> && ct_operand<operandT>)
+{
+  for (size_t i = 0; i < x.size(); i++) {
+    ct_swap<branchT, operandT>(br, x[i], y[i]);
+  }
+}
+
 // Given two integers x, y of type operandT, this routine returns truth value (
 // if x <= y ) or false value ( in case x > y ) based on result of lesser than
 // equal comparison test.

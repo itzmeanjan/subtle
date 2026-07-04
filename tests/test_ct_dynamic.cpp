@@ -325,6 +325,39 @@ verify_ct_swap()
   }
 }
 
+// --- Conditional swap (span overload) ---
+
+template<typename operandT, typename branchT>
+void
+verify_ct_swap_span()
+{
+  constexpr size_t FIXED_BUF_SIZE = 16;
+
+  std::random_device rd;
+  std::mt19937_64 gen(rd());
+  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
+
+  for (size_t i = 0; i < ITERATIONS; i++) {
+    std::array<operandT, FIXED_BUF_SIZE> x{};
+    std::array<operandT, FIXED_BUF_SIZE> y{};
+    branchT br = static_cast<branchT>(-static_cast<branchT>(gen() & 1U));
+
+    std::ranges::generate(x, [&]() { return dis(gen); });
+    std::ranges::generate(y, [&]() { return dis(gen); });
+
+    CT_POISON(x.data(), x.size() * sizeof(operandT));
+    CT_POISON(y.data(), y.size() * sizeof(operandT));
+    CT_POISON(&br, sizeof(br));
+
+    subtle::ct_swap<branchT, operandT>(br, std::span<operandT, FIXED_BUF_SIZE>(x), std::span<operandT, FIXED_BUF_SIZE>(y));
+
+    volatile operandT sink_x = x[0];
+    volatile operandT sink_y = y[0];
+    static_cast<void>(sink_x);
+    static_cast<void>(sink_y);
+  }
+}
+
 // Run a verify function for all 16 type combinations.
 template<template<typename, typename> class VerifyFn>
 void
@@ -429,6 +462,12 @@ struct swap_wrapper
 };
 
 template<typename OpT, typename RetT>
+struct swap_span_wrapper
+{
+  void operator()() { verify_ct_swap_span<OpT, RetT>(); }
+};
+
+template<typename OpT, typename RetT>
 struct memcmp_wrapper
 {
   void operator()() { verify_ct_memcmp<OpT, RetT>(); }
@@ -482,6 +521,9 @@ main()
 
   std::puts("  ct_swap...");
   verify_all_types<swap_wrapper>();
+
+  std::puts("  ct_swap (span overload)...");
+  verify_all_types<swap_span_wrapper>();
 
   std::puts("  ct_memcmp...");
   verify_all_types<memcmp_wrapper>();

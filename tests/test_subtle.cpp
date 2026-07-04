@@ -150,6 +150,22 @@ TYPED_TEST(CtSwapFalseTest, Correctness)
   test_subtle::test_ct_swap_false<operandT, returnT>();
 }
 
+// --- ct_swap (span overload) tests ---
+
+template<typename T>
+class CtSwapSpanTest : public ::testing::Test
+{};
+
+TYPED_TEST_SUITE(CtSwapSpanTest, TypeCombinations);
+
+TYPED_TEST(CtSwapSpanTest, Correctness)
+{
+  using operandT = typename TypeParam::first_type;
+  using branchT = typename TypeParam::second_type;
+
+  test_subtle::test_ct_swap_span<operandT, branchT>();
+}
+
 // --- ct_le tests ---
 
 template<typename T>

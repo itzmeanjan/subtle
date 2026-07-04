@@ -102,6 +102,22 @@ TYPED_TEST(CtIsZeroTest, Correctness)
   test_subtle::test_ct_is_zero<operandT, returnT>();
 }
 
+// --- ct_is_zero (span overload) tests ---
+
+template<typename T>
+class CtIsZeroSpanTest : public ::testing::Test
+{};
+
+TYPED_TEST_SUITE(CtIsZeroSpanTest, TypeCombinations);
+
+TYPED_TEST(CtIsZeroSpanTest, Correctness)
+{
+  using operandT = typename TypeParam::first_type;
+  using returnT = typename TypeParam::second_type;
+
+  test_subtle::test_ct_is_zero_span<operandT, returnT>();
+}
+
 // --- ct_select tests ---
 
 template<typename T>

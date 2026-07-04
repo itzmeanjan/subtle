@@ -97,6 +97,26 @@ ct_is_zero(const operandT x)
   return ct_eq<operandT, returnT>(x, operandT{ 0 });
 }
 
+// Given a span vals of integers, this routine returns truth value ( if every
+// element is zero ) or false value ( in case any element is non-zero ) testing
+// whether the whole buffer is all zeros.
+//
+// We represent truth value using maximum number that can be represented using
+// returnT i.e. all bits of returnT are set to one. While for false value, we
+// set all bits of returnT to zero.
+template<typename operandT, typename returnT, size_t N>
+forceinline constexpr returnT
+ct_is_zero(std::span<const operandT, N> vals)
+  requires(ct_operand<operandT> && std::is_unsigned_v<returnT>)
+{
+  returnT acc = static_cast<returnT>(~returnT{ 0 });
+  for (size_t i = 0; i < vals.size(); i++) {
+    acc = static_cast<returnT>(acc & ct_is_zero<operandT, returnT>(vals[i]));
+  }
+
+  return acc;
+}
+
 // Given a branch value br ( of type branchT ) holding either truth or false
 // value and two integers x, y of type operandT, this routine selects x if br is
 // truth value or it returns y.

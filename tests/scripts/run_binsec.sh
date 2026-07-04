@@ -47,7 +47,9 @@ for func in $FUNCTIONS; do
   fi
 
   # Determine which globals are secret, per operation family.
-  if [[ "$func" == *_is_zero_* ]]; then
+  if [[ "$func" == *_is_zero_span_* ]]; then
+    secrets="${sbuf1}"
+  elif [[ "$func" == *_is_zero_* ]]; then
     secrets="${sx}"
   elif [[ "$func" == *_lookup_* ]]; then
     secrets="secret_x${width}, ${sbuf1}"

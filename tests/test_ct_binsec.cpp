@@ -155,6 +155,33 @@ binsec_ct_is_zero_u64()
   _exit(0);
 }
 
+// --- ct_is_zero span overload (buffer contents are secret) ---
+
+extern "C" void
+binsec_ct_is_zero_span_u8()
+{
+  sink8 = subtle::ct_is_zero<uint8_t, uint8_t>(std::span<const uint8_t, SECRET_BUF_LEN>(secret_buf1_u8));
+  _exit(0);
+}
+extern "C" void
+binsec_ct_is_zero_span_u16()
+{
+  sink16 = subtle::ct_is_zero<uint16_t, uint16_t>(std::span<const uint16_t, SECRET_BUF_LEN>(secret_buf1_u16));
+  _exit(0);
+}
+extern "C" void
+binsec_ct_is_zero_span_u32()
+{
+  sink32 = subtle::ct_is_zero<uint32_t, uint32_t>(std::span<const uint32_t, SECRET_BUF_LEN>(secret_buf1_u32));
+  _exit(0);
+}
+extern "C" void
+binsec_ct_is_zero_span_u64()
+{
+  sink64 = subtle::ct_is_zero<uint64_t, uint64_t>(std::span<const uint64_t, SECRET_BUF_LEN>(secret_buf1_u64));
+  _exit(0);
+}
+
 // --- ct_le ---
 
 extern "C" void
@@ -442,6 +469,31 @@ extern "C" void
 binsec_ct_is_zero_i64()
 {
   sink64 = subtle::ct_is_zero<int64_t, uint64_t>(secret_ix64);
+  _exit(0);
+}
+
+extern "C" void
+binsec_ct_is_zero_span_i8()
+{
+  sink8 = subtle::ct_is_zero<int8_t, uint8_t>(std::span<const int8_t, SECRET_BUF_LEN>(secret_buf1_i8));
+  _exit(0);
+}
+extern "C" void
+binsec_ct_is_zero_span_i16()
+{
+  sink16 = subtle::ct_is_zero<int16_t, uint16_t>(std::span<const int16_t, SECRET_BUF_LEN>(secret_buf1_i16));
+  _exit(0);
+}
+extern "C" void
+binsec_ct_is_zero_span_i32()
+{
+  sink32 = subtle::ct_is_zero<int32_t, uint32_t>(std::span<const int32_t, SECRET_BUF_LEN>(secret_buf1_i32));
+  _exit(0);
+}
+extern "C" void
+binsec_ct_is_zero_span_i64()
+{
+  sink64 = subtle::ct_is_zero<int64_t, uint64_t>(std::span<const int64_t, SECRET_BUF_LEN>(secret_buf1_i64));
   _exit(0);
 }
 

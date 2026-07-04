@@ -1,6 +1,7 @@
 #pragma once
 #include "subtle.hpp"
 #include <algorithm>
+#include <cstdint>
 #include <gtest/gtest.h>
 #include <limits>
 #include <random>
@@ -11,6 +12,25 @@
 namespace test_subtle {
 
 constexpr size_t ITERATIONS = 1UL << 16;
+
+// std::uniform_int_distribution is only specified for the standard integer types
+// -- not char / char8_t / char16_t / char32_t. libstdc++ tolerates these as an
+// extension, but libc++ ( macOS / Clang ) rejects them. This adapter draws from a
+// conforming 64-bit distribution spanning the full range of operandT and narrows
+// the result, so it works uniformly across every ct_operand type.
+template<typename operandT>
+class operand_distribution
+{
+  using wide_t = std::conditional_t<std::is_signed_v<operandT>, std::int64_t, std::uint64_t>;
+  std::uniform_int_distribution<wide_t> dist{ static_cast<wide_t>(std::numeric_limits<operandT>::min()), static_cast<wide_t>(std::numeric_limits<operandT>::max()) };
+
+public:
+  template<typename Generator>
+  operandT operator()(Generator& gen)
+  {
+    return static_cast<operandT>(dist(gen));
+  }
+};
 
 // Test functional correctness of constant-time equality operation over unsigned
 // integer types, checking result against native comparison operator ( i.e. == )
@@ -24,7 +44,7 @@ test_ct_eq()
 
   std::random_device rd;
   std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
+  operand_distribution<operandT> dis;
 
   for (size_t i = 0; i < ITERATIONS; i++) {
     const operandT x = dis(gen);
@@ -50,7 +70,7 @@ test_ct_ne()
 
   std::random_device rd;
   std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
+  operand_distribution<operandT> dis;
 
   for (size_t i = 0; i < ITERATIONS; i++) {
     const operandT x = dis(gen);
@@ -73,7 +93,7 @@ test_ct_is_zero()
 
   std::random_device rd;
   std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
+  operand_distribution<operandT> dis;
 
   for (size_t i = 0; i < ITERATIONS; i++) {
     const operandT x = dis(gen);
@@ -98,7 +118,7 @@ test_ct_is_zero_span()
 
   std::random_device rd;
   std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
+  operand_distribution<operandT> dis;
   std::uniform_int_distribution<size_t> size_dis(MIN_SIZE, MAX_SIZE);
 
   for (size_t i = 0; i < ITERATIONS; i++) {
@@ -126,7 +146,7 @@ test_ct_select()
 
   std::random_device rd;
   std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
+  operand_distribution<operandT> dis;
 
   for (size_t i = 0; i < ITERATIONS; i++) {
     const operandT x = dis(gen);
@@ -145,7 +165,7 @@ check_ct_swap_round(std::mt19937_64& gen)
   constexpr returnT falsev = 0;
   constexpr returnT truthv = static_cast<returnT>(~falsev);
 
-  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
+  operand_distribution<operandT> dis;
 
   operandT x = dis(gen);
   operandT y = dis(gen);
@@ -193,7 +213,7 @@ check_ct_swap_span_round(std::mt19937_64& gen)
   constexpr size_t MIN_SIZE = 0;
   constexpr size_t MAX_SIZE = 1024;
 
-  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
+  operand_distribution<operandT> dis;
   std::uniform_int_distribution<size_t> size_dis(MIN_SIZE, MAX_SIZE);
 
   const size_t len = size_dis(gen);
@@ -248,7 +268,7 @@ test_ct_le()
 
   std::random_device rd;
   std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
+  operand_distribution<operandT> dis;
 
   for (size_t i = 0; i < ITERATIONS; i++) {
     const operandT x = dis(gen);
@@ -274,7 +294,7 @@ test_ct_gt()
 
   std::random_device rd;
   std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
+  operand_distribution<operandT> dis;
 
   for (size_t i = 0; i < ITERATIONS; i++) {
     const operandT x = dis(gen);
@@ -297,7 +317,7 @@ test_ct_ge()
 
   std::random_device rd;
   std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
+  operand_distribution<operandT> dis;
 
   for (size_t i = 0; i < ITERATIONS; i++) {
     const operandT x = dis(gen);
@@ -323,7 +343,7 @@ test_ct_lt()
 
   std::random_device rd;
   std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
+  operand_distribution<operandT> dis;
 
   for (size_t i = 0; i < ITERATIONS; i++) {
     const operandT x = dis(gen);
@@ -375,7 +395,7 @@ test_ct_memcmp()
 
   std::random_device rd;
   std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
+  operand_distribution<operandT> dis;
   std::uniform_int_distribution<size_t> size_dis(MIN_SIZE, MAX_SIZE);
 
   for (size_t i = 0; i < ITERATIONS; i++) {
@@ -413,7 +433,7 @@ test_ct_conditional_memcpy()
 
   std::random_device rd;
   std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
+  operand_distribution<operandT> dis;
   std::uniform_int_distribution<size_t> size_dis(MIN_SIZE, MAX_SIZE);
 
   for (size_t i = 0; i < ITERATIONS; i++) {
@@ -449,7 +469,7 @@ test_ct_lookup()
 
   std::random_device rd;
   std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
+  operand_distribution<operandT> dis;
   std::uniform_int_distribution<size_t> size_dis(MIN_SIZE, MAX_SIZE);
 
   for (size_t i = 0; i < ITERATIONS; i++) {

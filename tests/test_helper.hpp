@@ -354,6 +354,48 @@ test_ct_lt()
   }
 }
 
+// Test functional correctness of constant-time minimum operation over integer
+// types, checking the result against std::min.
+template<typename operandT>
+void
+test_ct_min()
+  requires(subtle::ct_operand<operandT>)
+{
+  std::random_device rd;
+  std::mt19937_64 gen(rd());
+  operand_distribution<operandT> dis;
+
+  for (size_t i = 0; i < ITERATIONS; i++) {
+    const operandT x = dis(gen);
+    const operandT y = dis(gen);
+
+    ASSERT_EQ(subtle::ct_min<operandT>(x, y), std::min(x, y));
+    ASSERT_EQ(subtle::ct_min<operandT>(y, x), std::min(x, y));
+    ASSERT_EQ(subtle::ct_min<operandT>(x, x), x);
+  }
+}
+
+// Test functional correctness of constant-time maximum operation over integer
+// types, checking the result against std::max.
+template<typename operandT>
+void
+test_ct_max()
+  requires(subtle::ct_operand<operandT>)
+{
+  std::random_device rd;
+  std::mt19937_64 gen(rd());
+  operand_distribution<operandT> dis;
+
+  for (size_t i = 0; i < ITERATIONS; i++) {
+    const operandT x = dis(gen);
+    const operandT y = dis(gen);
+
+    ASSERT_EQ(subtle::ct_max<operandT>(x, y), std::max(x, y));
+    ASSERT_EQ(subtle::ct_max<operandT>(y, x), std::max(x, y));
+    ASSERT_EQ(subtle::ct_max<operandT>(x, x), x);
+  }
+}
+
 // Test functional correctness of constant-time zeroize operation,
 // verifying all elements of a span are zeroed after the operation.
 template<typename T>

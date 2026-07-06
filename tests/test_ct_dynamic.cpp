@@ -204,6 +204,48 @@ verify_ct_lt()
   }
 }
 
+// --- Min / max ---
+
+template<typename operandT>
+void
+verify_ct_min()
+{
+  std::random_device rd;
+  std::mt19937_64 gen(rd());
+  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
+
+  for (size_t i = 0; i < ITERATIONS; i++) {
+    operandT x = dis(gen);
+    operandT y = dis(gen);
+
+    CT_POISON(&x, sizeof(x));
+    CT_POISON(&y, sizeof(y));
+
+    volatile operandT sink = subtle::ct_min<operandT>(x, y);
+    static_cast<void>(sink);
+  }
+}
+
+template<typename operandT>
+void
+verify_ct_max()
+{
+  std::random_device rd;
+  std::mt19937_64 gen(rd());
+  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
+
+  for (size_t i = 0; i < ITERATIONS; i++) {
+    operandT x = dis(gen);
+    operandT y = dis(gen);
+
+    CT_POISON(&x, sizeof(x));
+    CT_POISON(&y, sizeof(y));
+
+    volatile operandT sink = subtle::ct_max<operandT>(x, y);
+    static_cast<void>(sink);
+  }
+}
+
 // --- Memory comparison ---
 
 template<typename operandT, typename returnT>
@@ -578,6 +620,18 @@ struct zeroize_wrapper
   void operator()() { verify_ct_zeroize<T>(); }
 };
 
+template<typename T>
+struct min_wrapper
+{
+  void operator()() { verify_ct_min<T>(); }
+};
+
+template<typename T>
+struct max_wrapper
+{
+  void operator()() { verify_ct_max<T>(); }
+};
+
 } // anonymous namespace
 
 int
@@ -608,6 +662,12 @@ main()
 
   std::puts("  ct_lt...");
   verify_all_types<lt_wrapper>();
+
+  std::puts("  ct_min...");
+  verify_all_element_types<min_wrapper>();
+
+  std::puts("  ct_max...");
+  verify_all_element_types<max_wrapper>();
 
   std::puts("  ct_select...");
   verify_all_types<select_wrapper>();

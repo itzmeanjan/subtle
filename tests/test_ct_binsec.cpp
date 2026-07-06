@@ -290,6 +290,60 @@ binsec_ct_lt_u64()
   _exit(0);
 }
 
+// --- ct_min ---
+
+extern "C" void
+binsec_ct_min_u8()
+{
+  sink8 = subtle::ct_min<uint8_t>(secret_x8, secret_y8);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_min_u16()
+{
+  sink16 = subtle::ct_min<uint16_t>(secret_x16, secret_y16);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_min_u32()
+{
+  sink32 = subtle::ct_min<uint32_t>(secret_x32, secret_y32);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_min_u64()
+{
+  sink64 = subtle::ct_min<uint64_t>(secret_x64, secret_y64);
+  _exit(0);
+}
+
+// --- ct_max ---
+
+extern "C" void
+binsec_ct_max_u8()
+{
+  sink8 = subtle::ct_max<uint8_t>(secret_x8, secret_y8);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_max_u16()
+{
+  sink16 = subtle::ct_max<uint16_t>(secret_x16, secret_y16);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_max_u32()
+{
+  sink32 = subtle::ct_max<uint32_t>(secret_x32, secret_y32);
+  _exit(0);
+}
+extern "C" void
+binsec_ct_max_u64()
+{
+  sink64 = subtle::ct_max<uint64_t>(secret_x64, secret_y64);
+  _exit(0);
+}
+
 // --- Ordering over signed operands (both operands secret) ---
 //
 // Signed support adds a compile-time sign-bit flip in ct_le; gt/ge/lt derive
@@ -392,6 +446,56 @@ extern "C" void
 binsec_ct_lt_i64()
 {
   sink64 = subtle::ct_lt<int64_t, uint64_t>(secret_ix64, secret_iy64);
+  _exit(0);
+}
+
+extern "C" void
+binsec_ct_min_i8()
+{
+  sink8 = static_cast<uint8_t>(subtle::ct_min<int8_t>(secret_ix8, secret_iy8));
+  _exit(0);
+}
+extern "C" void
+binsec_ct_min_i16()
+{
+  sink16 = static_cast<uint16_t>(subtle::ct_min<int16_t>(secret_ix16, secret_iy16));
+  _exit(0);
+}
+extern "C" void
+binsec_ct_min_i32()
+{
+  sink32 = static_cast<uint32_t>(subtle::ct_min<int32_t>(secret_ix32, secret_iy32));
+  _exit(0);
+}
+extern "C" void
+binsec_ct_min_i64()
+{
+  sink64 = static_cast<uint64_t>(subtle::ct_min<int64_t>(secret_ix64, secret_iy64));
+  _exit(0);
+}
+
+extern "C" void
+binsec_ct_max_i8()
+{
+  sink8 = static_cast<uint8_t>(subtle::ct_max<int8_t>(secret_ix8, secret_iy8));
+  _exit(0);
+}
+extern "C" void
+binsec_ct_max_i16()
+{
+  sink16 = static_cast<uint16_t>(subtle::ct_max<int16_t>(secret_ix16, secret_iy16));
+  _exit(0);
+}
+extern "C" void
+binsec_ct_max_i32()
+{
+  sink32 = static_cast<uint32_t>(subtle::ct_max<int32_t>(secret_ix32, secret_iy32));
+  _exit(0);
+}
+extern "C" void
+binsec_ct_max_i64()
+{
+  sink64 = static_cast<uint64_t>(subtle::ct_max<int64_t>(secret_ix64, secret_iy64));
   _exit(0);
 }
 

@@ -230,6 +230,36 @@ TYPED_TEST(CtLtTest, Correctness)
   test_subtle::test_ct_lt<operandT, returnT>();
 }
 
+// --- ct_min tests ---
+
+template<typename T>
+class CtMinTest : public ::testing::Test
+{};
+
+TYPED_TEST_SUITE(CtMinTest, TypeCombinations);
+
+TYPED_TEST(CtMinTest, Correctness)
+{
+  using operandT = typename TypeParam::first_type;
+
+  test_subtle::test_ct_min<operandT>();
+}
+
+// --- ct_max tests ---
+
+template<typename T>
+class CtMaxTest : public ::testing::Test
+{};
+
+TYPED_TEST_SUITE(CtMaxTest, TypeCombinations);
+
+TYPED_TEST(CtMaxTest, Correctness)
+{
+  using operandT = typename TypeParam::first_type;
+
+  test_subtle::test_ct_max<operandT>();
+}
+
 // --- ct_zeroize tests ---
 
 using ElementTypes =

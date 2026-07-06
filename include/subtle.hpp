@@ -2,6 +2,7 @@
 #include "forceinline.hpp"
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <limits>
 #include <span>
 #include <type_traits>
@@ -283,6 +284,26 @@ ct_lt(const operandT x, const operandT y)
 {
   const returnT z = ct_ge<operandT, returnT>(x, y);
   return static_cast<returnT>(~z); // bit-inverted result of >= test
+}
+
+// Given two integers x, y of type operandT, this routine returns the smaller of
+// the two -- equivalent to std::min(x, y).
+template<typename operandT>
+forceinline constexpr operandT
+ct_min(const operandT x, const operandT y)
+  requires(ct_operand<operandT>)
+{
+  return ct_select(ct_le<operandT, uint32_t>(x, y), x, y);
+}
+
+// Given two integers x, y of type operandT, this routine returns the larger of
+// the two -- equivalent to std::max(x, y).
+template<typename operandT>
+forceinline constexpr operandT
+ct_max(const operandT x, const operandT y)
+  requires(ct_operand<operandT>)
+{
+  return ct_select(ct_le<operandT, uint32_t>(x, y), y, x);
 }
 
 // Securely zeroizes a std::span, preventing the compiler from optimizing away the operation.

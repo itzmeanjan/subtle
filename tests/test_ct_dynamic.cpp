@@ -262,6 +262,36 @@ verify_ct_conditional_memcpy()
   }
 }
 
+// --- Conditional memset ---
+
+template<typename operandT, typename branchT>
+void
+verify_ct_conditional_memset()
+{
+  constexpr size_t FIXED_BUF_SIZE = 16;
+
+  std::random_device rd;
+  std::mt19937_64 gen(rd());
+  std::uniform_int_distribution<operandT> dis(std::numeric_limits<operandT>::min(), std::numeric_limits<operandT>::max());
+
+  for (size_t i = 0; i < ITERATIONS; i++) {
+    std::array<operandT, FIXED_BUF_SIZE> dst{};
+    branchT br = static_cast<branchT>(-static_cast<branchT>(gen() & 1U));
+    operandT val = dis(gen);
+
+    std::ranges::generate(dst, [&]() { return dis(gen); });
+
+    CT_POISON(dst.data(), dst.size() * sizeof(operandT));
+    CT_POISON(&br, sizeof(br));
+    CT_POISON(&val, sizeof(val));
+
+    subtle::ct_conditional_memset<branchT, operandT>(br, std::span<operandT, FIXED_BUF_SIZE>(dst), val);
+
+    volatile operandT sink = dst[0];
+    static_cast<void>(sink);
+  }
+}
+
 // --- Table lookup ---
 
 template<typename operandT, typename indexT>
@@ -531,6 +561,12 @@ struct conditional_memcpy_wrapper
 };
 
 template<typename OpT, typename RetT>
+struct conditional_memset_wrapper
+{
+  void operator()() { verify_ct_conditional_memset<OpT, RetT>(); }
+};
+
+template<typename OpT, typename RetT>
 struct lookup_wrapper
 {
   void operator()() { verify_ct_lookup<OpT, RetT>(); }
@@ -587,6 +623,9 @@ main()
 
   std::puts("  ct_conditional_memcpy...");
   verify_all_types<conditional_memcpy_wrapper>();
+
+  std::puts("  ct_conditional_memset...");
+  verify_all_types<conditional_memset_wrapper>();
 
   std::puts("  ct_lookup...");
   verify_all_types<lookup_wrapper>();

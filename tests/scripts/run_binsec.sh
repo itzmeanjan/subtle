@@ -57,6 +57,8 @@ for func in $FUNCTIONS; do
     secrets="${sbuf1}, ${sbuf2}, secret_br${width}"
   elif [[ "$func" == *_conditional_memcpy_* ]]; then
     secrets="${sbuf1}, ${sbuf2}, secret_br${width}"
+  elif [[ "$func" == *_conditional_memset_* ]]; then
+    secrets="${sbuf1}, ${sx}, secret_br${width}"
   elif [[ "$func" == *_memcmp_* ]]; then
     secrets="${sbuf1}, ${sbuf2}"
   elif [[ "$func" == *_zeroize_* ]]; then

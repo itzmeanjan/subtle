@@ -22,7 +22,13 @@ if(NOT subtle_FOUND)
   FetchContent_MakeAvailable(subtle)
 endif()
 
-# --- Example Executable ---
+# --- Example Executables ---
+
+add_executable(ct_compare_example ct_compare.cpp)
+target_link_libraries(ct_compare_example PRIVATE subtle)
+
+add_executable(ct_copy_example ct_copy.cpp)
+target_link_libraries(ct_copy_example PRIVATE subtle)
+
 add_executable(ct_swap_example ct_swap.cpp)
 target_link_libraries(ct_swap_example PRIVATE subtle)
-target_compile_features(ct_swap_example PRIVATE cxx_std_20)

@@ -1,6 +1,6 @@
 # subtle
 
-Constant-time comparison, conditional selection and conditional swapping of unsigned integer values. C++20, header-only, fully `constexpr` library.
+Constant-time operations on both signed and unsigned integer values of 8, 16, 32, 64 bit widths — comparison, zero-testing, min/max, conditional selection/swap, memory compare, conditional copy/set, secure zeroization and secret-index table lookup. C++20, header-only, fully `constexpr` library.
 
 > [!NOTE]
 > `constexpr` ? Yes, all functions can be evaluated at compile-time — useful for `static_assert` based test cases.
@@ -26,22 +26,21 @@ Compare two byte arrays in constant-time:
 
 ```cpp
 #include "subtle.hpp"
+#include <algorithm>
 #include <array>
 #include <cstdint>
+#include <span>
 
-bool
-ct_memcmp(const std::array<uint8_t, 16>& a, const std::array<uint8_t, 16>& b)
-{
-  uint32_t result = ~uint32_t{ 0 }; // all bits set = true
-  for (size_t i = 0; i < a.size(); i++) {
-    result &= subtle::ct_eq<uint8_t, uint32_t>(a[i], b[i]);
-  }
+std::array<uint8_t, 16> a;
+std::array<uint8_t, 16> b;
 
-  return result != 0;
-}
+std::ranges::fill(a, 0xae);
+std::ranges::fill(b, 0xde);
+
+const uint32_t equal = subtle::ct_memcmp<uint8_t, uint32_t>(std::span(a), std::span(b));
 ```
 
-`std::memcmp` would short-circuit, as early as possible. So it is data-dependent. We want to explicitly avoid being data-dependent. Because it can be used for comparing two secret material strings. We want to compare two secret materials such that it always takes exactly same time. The secret material values must not affect timing of comparison. If your usecase requires you to achieve this, you should rather use `ct_memcmp`.
+`std::memcmp` would short-circuit its execution as early as possible. It is data-dependent. When comparing secret key material, we want comparison to always take same time. The secret material value must not affect timing of comparison. `subtle::ct_memcmp` guarantees this by AND-accumulating a per-byte constant-time equality check across the whole buffer — every byte is always inspected, with no early exit and no secret-dependent branch. Each per-byte check routes its result through a compiler barrier (an empty inline-asm that emits zero instructions), keeping the accumulator opaque so the compiler cannot recognize the pattern and reintroduce a short-circuit. The returned mask is all-bits-set (`0xffffffff` for this `uint32_t` result) on a full match and `0` otherwise.
 
 See [examples/](./examples/) for complete standalone examples.
 
@@ -60,11 +59,12 @@ We mostly write programs in some high-level language, say C++. That program is p
 
 I don't want to write same boilerplate code again and again for achieving constant-timeness. That's why I maintain this minimal, header-only, portable, fully `constexpr` C++ library which offers following functionalities.
 
-- Constant-time comparison operations (`==`, `!=`, `<`, `>`, `<=`, `>=`)
-- Constant-time conditional selection
-- Constant-time conditional swapping
+- Constant-time comparison — equality (`==`, `!=`), ordering (`<`, `>`, `<=`, `>=`), zero-testing and min/max
+- Constant-time conditional selection and swapping (over both scalars and spans)
+- Constant-time memory comparison, conditional copy and conditional set over spans
+- Secure zeroization and secret-index table lookup (defeats cache-timing leaks from `table[secret]`)
 
-These operations work over `uint8_t`, `uint16_t`, `uint32_t` and `uint64_t`. This is a best effort mechanism to achieve constant-timeness and it's not guaranteed that if you use this, your cryptographic implementation becomes constant-time. It's always good idea to target some specific architecture, compile with debug info and then disassemble object file, with interleaved source code lines, to inspect what the compiler generated.
+These operations work over both signed and unsigned integer operands of 8, 16, 32 and 64 bit width (branch/mask and result types are always unsigned). This is a best effort mechanism to achieve constant-timeness and it's not guaranteed that if you use this, your cryptographic implementation becomes constant-time. It's always good idea to target some specific architecture, compile with debug info and then disassemble object file, with interleaved source code lines, to inspect what the compiler generated.
 
 > [!NOTE]
 > This library collects motivation from both <https://github.com/dalek-cryptography/subtle> and <https://github.com/golang/go/blob/ddb423a7/src/crypto/subtle/constant_time.go>.
@@ -90,11 +90,14 @@ These operations work over `uint8_t`, `uint16_t`, `uint32_t` and `uint64_t`. Thi
 | `SUBTLE_FETCH_DEPS` | Fetch missing dependencies (GTest, Benchmark) | `OFF` |
 | `SUBTLE_ASAN` | Enable AddressSanitizer | `OFF` |
 | `SUBTLE_UBSAN` | Enable UndefinedBehaviorSanitizer | `OFF` |
+| `SUBTLE_MSAN` | Enable MemorySanitizer for constant-time verification (Clang only) | `OFF` |
+| `SUBTLE_VALGRIND` | Enable Valgrind constant-time verification (Linux only) | `OFF` |
+| `SUBTLE_BINSEC` | Build binary for Binsec constant-time verification | `OFF` |
 | `SUBTLE_NATIVE_OPT` | Enable `-march=native` (not suitable for cross-compilation) | `OFF` |
 | `SUBTLE_ENABLE_LTO` | Enable Interprocedural Optimization (LTO) | `ON` |
 
 > [!NOTE]
-> `SUBTLE_ASAN`, `SUBTLE_UBSAN`, `SUBTLE_NATIVE_OPT` and `SUBTLE_ENABLE_LTO` are only available when building `subtle` as the top-level project. They are not exposed when consumed via `FetchContent` or `add_subdirectory`.
+> The options above (except `SUBTLE_BUILD_*` and `SUBTLE_FETCH_DEPS`) are only available when building `subtle` as the top-level project. They are not exposed when consumed via `FetchContent` or `add_subdirectory`.
 
 ### Testing
 
@@ -125,6 +128,51 @@ cmake -B build -DCMAKE_BUILD_TYPE=Debug -DSUBTLE_BUILD_TESTS=ON -DSUBTLE_FETCH_D
 cmake --build build -j
 ctest --test-dir build -j --output-on-failure
 ```
+
+### Constant-Timeness Verification
+
+Correctness tests only check that the functions compute the right values — they do **not** check constant-timeness. For that, `subtle` ships three independent verification tools, each behind its own CMake option. They are mutually exclusive: enable exactly one at a time, and none of them link Google Test (so `-DSUBTLE_FETCH_DEPS=ON` is not needed).
+
+The dynamic tools (MSan, Valgrind) mark secret inputs as poisoned and run the constant-time functions; any secret-dependent branch or memory access is reported as a use of poisoned data. Binsec goes further and formally proves constant-timeness over the emitted binary via symbolic execution. See [CT_VERIFICATION_REPORT.md](./CT_VERIFICATION_REPORT.md) for the reasoning behind this layered approach.
+
+#### MemorySanitizer (Clang + libc++ only)
+
+Fast, CI-friendly taint tracking. Requires `clang++` and `libc++` (install `libc++-dev libc++abi-dev` on Debian/Ubuntu).
+
+```bash
+cmake -B build -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release -DSUBTLE_BUILD_TESTS=ON -DSUBTLE_MSAN=ON -DSUBTLE_ENABLE_LTO=OFF
+cmake --build build -j
+ctest --test-dir build --output-on-failure -j
+```
+
+#### Valgrind (Linux only)
+
+Complementary to MSan; works with either `g++` or `clang++`. Requires `valgrind` on `PATH`. The `ctest` run drives the binary under Valgrind's memcheck automatically.
+
+```bash
+cmake -B build -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=Release -DSUBTLE_BUILD_TESTS=ON -DSUBTLE_VALGRIND=ON -DSUBTLE_ENABLE_LTO=OFF
+cmake --build build -j
+ctest --test-dir build --output-on-failure -j
+```
+
+#### Binsec (binary-level formal verification)
+
+Symbolic execution of the final statically-linked binary.
+
+```bash
+bash tests/scripts/run_docker_binsec.sh
+```
+
+If you already have `binsec` on your `PATH`, you can instead build the target and invoke the verifier directly:
+
+```bash
+cmake -B build -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=Release -DSUBTLE_BUILD_TESTS=ON -DSUBTLE_BINSEC=ON
+cmake --build build -j
+cmake --build build --target binsec_verify
+```
+
+> [!NOTE]
+> Binsec is not run at `Debug` (`-O0`): without optimization the compiler doesn't lower the bitwise patterns into branchless code, so it reports branches that only exist at `-O0`. Use `Release`, `RelWithDebInfo` or `MinSizeRel`.
 
 ### Benchmarking
 
@@ -199,7 +247,16 @@ cmake --build build
 cmake --install build
 ```
 
-Or using `FetchContent` in your `CMakeLists.txt`:
+Once installed, consume it from your `CMakeLists.txt` with `find_package`:
+
+```cmake
+find_package(subtle REQUIRED)
+
+add_executable(my_app main.cpp)
+target_link_libraries(my_app PRIVATE subtle::subtle)
+```
+
+Or, without installing, pull it in at configure time using `FetchContent`:
 
 ```cmake
 include(FetchContent)
@@ -233,124 +290,32 @@ cmake --build build --target format
 
 ## Usage
 
-`subtle` is a minimal, header-only, generic (templated over `uint8_t`, `uint16_t`, `uint32_t` and `uint64_t`), fully `constexpr` C++ library, which offers constant-time implementation of following functionalities. These are of great interest in high-assurance cryptographic software development context.
+`subtle` is a minimal, header-only, generic (templated over signed and unsigned integers of 8, 16, 32 and 64 bit width), fully `constexpr` C++ library offering constant-time building blocks for high-assurance cryptographic code:
 
-- Comparison operations (`==`, `!=`, `<`, `>`, `<=`, `>=`) with operands of type `uint{8, 16, 32, 64}_t`
-- Conditional selection operation s.t. `cond ? val0 : val1`
-- Conditional swap operation s.t. `if (cond) { std::swap(val0, val1); }`
+- Comparison — equality (`==`, `!=`), ordering (`<`, `>`, `<=`, `>=`), zero-testing, `ct_min` / `ct_max`
+- Conditional selection (`cond ? val0 : val1`) and swap
+- Span helpers — `ct_memcmp`, `ct_conditional_memcpy`, `ct_conditional_memset`, `ct_zeroize`, `ct_lookup`
 
-> [!NOTE]
-> `subtle` being a template library you can ( or need to ) specify what type of operands you're working with and what type of result you want from these constant-time functions. These can be any combination of `uint8_t`, `uint16_t`, `uint32_t` and `uint64_t`.
+Every routine returns and consumes a **mask**, not a `bool`: truth is all bits set (`0xff`, `0xffffffff`, …), false is all bits zero. That is what keeps the code branch-free — you combine and act on masks with bitwise operations instead of relational operators, so no secret value ever decides a code path or a memory address.
 
-Say for example, you've two values of type `uint8_t` held in variables $a$, $b$. You want to compare their values to see if $a$ equals $b$ or not. You can simply write following.
-
-```cpp
-uint8_t a, b;
-
-std::cin >> a;
-std::cin >> b;
-
-const bool flg = a == b;
-```
-
-It is perfectly fine, if you do not need to care about constant-timeness. In cryptographic context, when we deal with secret key materials, we want to avoid using relational operators, resulting in boolean value. We want to only rely on integer addition, subtraction and bit-wise operations. It's because whenever booleans are involved there is high chance that it can be transformed into some conditional operation. It can result in instruction cache miss. It can be measured by an adversary. An attack vector. While if we can only rely on constant-time instructions, such as integer addition, subtraction or bit-wise operations etc. laid next to each other in instruction cache - all the intructions will be executed in-order. No skipping. Final result will be acccumulated as some integer value and hopefully compiler won't be able to recognize and optimize it away. We can write.
+For a single pair of values, `ct_eq` yields such a mask, which feeds straight into a constant-time select — no `if`:
 
 ```cpp
-const uint8_t flag = subtle::ct_eq<uint8_t, uint8_t>(a, b);
+const uint8_t flag = subtle::ct_eq<uint8_t, uint8_t>(a, b); // 0xff if a == b, else 0x00
+dst = subtle::ct_select<uint8_t, uint8_t>(flag, src, dst);  // dst = flag ? src : dst
 ```
 
-With above implementation, we get `flag = 0xff`, in case $a == b$, otherwise `flag = 0x00`.
-
-Constant-time implementation becomes more practical and interesting, when we've to compare a set to values to another set to values to find whether they are same or not. Let's say we've two byte arrays $a$, $b$ of equal length. We want to compare them to figure if $a == b$. Now we want to keep a few things in mind.
-
-- Must **not** decide which code path to take based on contents of byte arrays $a$ or $b$.
-- Must **not** decide which memory addresses to access based on contents of byte arrays $a$ or $b$.
-
-Say, those two byte arrays are holding secret data. If we **do** any of the above mentioned things during the comparison, it can leak information about content of those byte arrays to some adversary who might be observing. There are various possible ways to collect these leaked information in various different execution environments.
-
-We start with.
+The same pattern scales to buffers through the span helpers. The classic "overwrite `dst` with `src` iff two secret buffers are equal":
 
 ```cpp
-uint8_t arr_a[16];
-uint8_t arr_b[16];
-
-// Fill arr_a, arr_b with some secret key material
-
-bool flag = true;
-
-for(size_t i = 0; i < 16; i++) {
-    if (arr_a[i] != arr_b[i]) {
-        flag = false;
-        break;
-    }
-}
+const uint32_t equal = subtle::ct_memcmp<uint8_t, uint32_t>(std::span(a), std::span(b));
+subtle::ct_conditional_memcpy<uint32_t, uint8_t>(equal, std::span(dst), std::span(src));
 ```
 
-We do **not** want to do this in cryptographic context. We're deciding when to break out of the loop ( i.e. which code path to take or which instructions to execute next ) based on content of byte arrays $a$ and $b$, which are filled with secret key material.
+Neither the code path nor the accessed addresses depend on the secret contents.
 
-Let's make it better.
-
-```cpp
-
-bool flag = false;
-
-for(size_t i = 0; i < 16; i++) {
-    flag |= static_cast<bool>(arr_a[i] ^ arr_b[i]);
-}
-
-const bool is_a_match = !flag;
-```
-
-Now we're doing it better, because it doesn't matter what the content of those two byte arrays are, we always execute same set to instructions. $flag$, in above code snippet, is a "secret boolean", because it holds accumulated result of comparing two secret bytearrays $a$, $b$.
-
-Now we write following, using $flag$.
-
-```cpp
-if (flag) {
-    std::memcpy(dst, src, 16);
-} else {
-    std::memset(dst, 0, 16);
-}
-
-// Or fancier alternative
-// Generally results into conditional move intructions
-
-std::memcpy(dst, src, 16 * flag);
-std::memset(dst, 0, 16 * !flag);
-```
-
-We're branching out ( i.e. deciding which instruction to execute ) based on secret boolean value $flag$.
-We can avoid this using `subtle`. First let us perform comparison of two secret bytearrays.
-
-```cpp
-uint32_t flag = ~uint32_t {0}; // = 0xffffffff
-
-for(size_t i = 0; i < 16; i++) {
-    flag &= subtle::ct_eq<uint8_t, uint32_t>(arr_a[i], arr_b[i]);
-}
-```
-
-If content of those two bytearrays match, `flag = 0xffffffff`, else `flag = 0`.
-
-> [!NOTE]
-> You may want `flag` to be of type `uint64_t`. In that case truth value is denoted by `0xffffffffffffffff` and false value by `0`. Read API documentation in [subtle.hpp](./include/subtle.hpp).
-
-Again $flag$ is a secret piece of data. We can't branch on its value. We can use `subtle` for conditionally selecting ( condition is truthness or falseness of the value held in $flag$ ) what value to write in $dst$, in constant-time.
-
-```cpp
-for(size_t i = 0; i < 16; i++) {
-    dst[i] = subtle::ct_select<uint32_t, uint8_t>(flag, src[i], 0);
-}
-```
-
-I maintain a few examples, where I demonstrate how you can use `subtle` API for writing constant-time code.
-
-- [Comparison of two byte arrays](./examples/ct_compare.cpp)
-- [Conditional copying of byte array](./examples/ct_copy.cpp)
-- [Conditional swapping of two values](./examples/ct_swap.cpp)
-
-For more examples, try going through [test cases](./tests/).
+Every function is documented inline in [subtle.hpp](./include/subtle.hpp). Standalone [examples/](./examples/) and [test cases](./tests/) exercise the full API.
 
 ---
 
-All functions in `subtle` are `constexpr` i.e. we get to enjoy compile-time computation benefits. It may not be very helpful for real-world cryptographic use cases. As we want constant-timeness when executing in runtime. But it can help in writing `static_assert` based test cases.
+All functions are `constexpr`, so they can be evaluated at compile time — handy for `static_assert`-based tests. The guarantee that matters for cryptography, though, is *runtime* constant-timeness; compile-time evaluation is a convenience on top.

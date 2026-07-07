@@ -6,19 +6,6 @@
 
 namespace {
 
-// Constant-time byte-array equality: returns all-ones if equal, zero otherwise
-uint32_t
-ct_byte_eq(std::span<const uint8_t> a, std::span<const uint8_t> b)
-{
-  uint32_t result = ~uint32_t{ 0 };
-
-  for (size_t i = 0; i < a.size(); i++) {
-    result &= subtle::ct_eq<uint8_t, uint32_t>(a[i], b[i]);
-  }
-
-  return result;
-}
-
 // Constant-time byte-array equality comparison using subtle::ct_eq
 void
 ct_memcmp(benchmark::State& state)
@@ -34,7 +21,7 @@ ct_memcmp(benchmark::State& state)
   auto b = a; // equal arrays = worst case (must scan all bytes)
 
   for (auto _iter : state) {
-    auto result = ct_byte_eq(a, b);
+    auto result = subtle::ct_memcmp<uint8_t, uint32_t>(std::span<const uint8_t>(a), std::span<const uint8_t>(b));
 
     benchmark::DoNotOptimize(result);
     benchmark::ClobberMemory();

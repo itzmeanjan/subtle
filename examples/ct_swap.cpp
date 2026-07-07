@@ -3,10 +3,12 @@
 #include <iostream>
 #include <random>
 
-// Demonstrates how to use subtle API for swapping two values held in two values
-// ( say a, b of type uint64_t ), based on value held in a conditional variable
-// br. This conditional variable represents truth value using all bits set to 1
-// and false value using all bits set to 0.
+/**
+ * Demonstrates how to use subtle API for swapping two values held in two values
+ * ( say a, b of type uint64_t ), based on value held in a conditional variable
+ * br. This conditional variable represents truth value using all bits set to 1
+ * and false value using all bits set to 0.
+ */
 
 int
 main()
@@ -23,9 +25,9 @@ main()
   // swap values of a, b or not
   const uint32_t br = -static_cast<uint32_t>(dis(gen) & 1U);
 
-  std::cout << br << "\t" << a << ", " << b << '\n';
+  std::cout << "branch = " << br << "\t" << "a = " << a << ", b = " << b << '\n';
   subtle::ct_swap(br, a, b);
-  std::cout << br << "\t" << a << ", " << b << '\n';
+  std::cout << "branch = " << br << "\t" << "a = " << a << ", b = " << b << '\n';
 
   return 0;
 }

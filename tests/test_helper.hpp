@@ -1,7 +1,11 @@
 #pragma once
 #include "subtle.hpp"
+#include <algorithm>
+#include <cstdint>
 #include <gtest/gtest.h>
+#include <limits>
 #include <random>
+#include <vector>
 
 // Test cases for ensuring functional correctness of constant-time comparison
 // and selection operations
@@ -9,19 +13,38 @@ namespace test_subtle {
 
 constexpr size_t ITERATIONS = 1UL << 16;
 
+// std::uniform_int_distribution is only specified for the standard integer types
+// -- not char / char8_t / char16_t / char32_t. libstdc++ tolerates these as an
+// extension, but libc++ ( macOS / Clang ) rejects them. This adapter draws from a
+// conforming 64-bit distribution spanning the full range of operandT and narrows
+// the result, so it works uniformly across every ct_operand type.
+template<typename operandT>
+class operand_distribution
+{
+  using wide_t = std::conditional_t<std::is_signed_v<operandT>, std::int64_t, std::uint64_t>;
+  std::uniform_int_distribution<wide_t> dist{ static_cast<wide_t>(std::numeric_limits<operandT>::min()), static_cast<wide_t>(std::numeric_limits<operandT>::max()) };
+
+public:
+  template<typename Generator>
+  operandT operator()(Generator& gen)
+  {
+    return static_cast<operandT>(dist(gen));
+  }
+};
+
 // Test functional correctness of constant-time equality operation over unsigned
 // integer types, checking result against native comparison operator ( i.e. == )
 template<typename operandT, typename returnT>
 void
 test_ct_eq()
-  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<returnT>)
 {
   constexpr returnT truthv = static_cast<returnT>(~returnT{ 0 });
   constexpr returnT falsev = 0;
 
   std::random_device rd;
   std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis;
+  operand_distribution<operandT> dis;
 
   for (size_t i = 0; i < ITERATIONS; i++) {
     const operandT x = dis(gen);
@@ -40,14 +63,14 @@ test_ct_eq()
 template<typename operandT, typename returnT>
 void
 test_ct_ne()
-  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<returnT>)
 {
   constexpr returnT truthv = static_cast<returnT>(~returnT{ 0 });
   constexpr returnT falsev = 0;
 
   std::random_device rd;
   std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis;
+  operand_distribution<operandT> dis;
 
   for (size_t i = 0; i < ITERATIONS; i++) {
     const operandT x = dis(gen);
@@ -58,19 +81,72 @@ test_ct_ne()
   }
 }
 
-// Test functional correctness of constant-time conditional selection operation
-// over unsigned integer types.
+// Test functional correctness of constant-time is-zero operation over integer
+// types, checking result against a native comparison against zero.
 template<typename operandT, typename returnT>
 void
-test_ct_select()
-  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
+test_ct_is_zero()
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<returnT>)
 {
   constexpr returnT truthv = static_cast<returnT>(~returnT{ 0 });
   constexpr returnT falsev = 0;
 
   std::random_device rd;
   std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis;
+  operand_distribution<operandT> dis;
+
+  for (size_t i = 0; i < ITERATIONS; i++) {
+    const operandT x = dis(gen);
+
+    const returnT z = subtle::ct_is_zero<operandT, returnT>(x);
+    ASSERT_EQ(z, (x == operandT{ 0 } ? truthv : falsev));
+  }
+}
+
+// Test functional correctness of constant-time is-zero operation over a whole
+// buffer, checking result against a native all-zeros scan.
+template<typename operandT, typename returnT>
+void
+test_ct_is_zero_span()
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<returnT>)
+{
+  constexpr returnT falsev = 0;
+  constexpr returnT truthv = static_cast<returnT>(~falsev);
+
+  constexpr size_t MIN_SIZE = 0;
+  constexpr size_t MAX_SIZE = 1024;
+
+  std::random_device rd;
+  std::mt19937_64 gen(rd());
+  operand_distribution<operandT> dis;
+  std::uniform_int_distribution<size_t> size_dis(MIN_SIZE, MAX_SIZE);
+
+  for (size_t i = 0; i < ITERATIONS; i++) {
+    const size_t len = size_dis(gen);
+
+    std::vector<operandT> vals(len);
+    std::ranges::generate(vals, [&]() { return dis(gen); });
+
+    const returnT z = subtle::ct_is_zero<operandT, returnT>(std::span<const operandT>(vals));
+    const bool expected = std::ranges::all_of(vals, [](operandT val) { return val == operandT{ 0 }; });
+
+    ASSERT_EQ(z, (expected ? truthv : falsev));
+  }
+}
+
+// Test functional correctness of constant-time conditional selection operation
+// over unsigned integer types.
+template<typename operandT, typename returnT>
+void
+test_ct_select()
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<returnT>)
+{
+  constexpr returnT truthv = static_cast<returnT>(~returnT{ 0 });
+  constexpr returnT falsev = 0;
+
+  std::random_device rd;
+  std::mt19937_64 gen(rd());
+  operand_distribution<operandT> dis;
 
   for (size_t i = 0; i < ITERATIONS; i++) {
     const operandT x = dis(gen);
@@ -81,82 +157,102 @@ test_ct_select()
   }
 }
 
-// Test that constant-time swap with truth value actually swaps.
 template<typename operandT, typename returnT>
 void
-test_ct_swap_truth()
-  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
-{
-  constexpr returnT truthv = static_cast<returnT>(~returnT{ 0 });
-
-  std::random_device rd;
-  std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis;
-
-  for (size_t i = 0; i < ITERATIONS; i++) {
-    operandT x = dis(gen);
-    operandT y = dis(gen);
-
-    const auto tmpx = x;
-    const auto tmpy = y;
-
-    subtle::ct_swap(truthv, x, y);
-
-    ASSERT_EQ(tmpx, y);
-    ASSERT_EQ(tmpy, x);
-  }
-}
-
-// Test that two consecutive truth-swaps round-trip back to original values.
-template<typename operandT, typename returnT>
-void
-test_ct_swap_roundtrip()
-  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
-{
-  constexpr returnT truthv = static_cast<returnT>(~returnT{ 0 });
-
-  std::random_device rd;
-  std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis;
-
-  for (size_t i = 0; i < ITERATIONS; i++) {
-    operandT x = dis(gen);
-    operandT y = dis(gen);
-
-    const auto tmpx = x;
-    const auto tmpy = y;
-
-    subtle::ct_swap(truthv, x, y);
-    subtle::ct_swap(truthv, x, y);
-
-    ASSERT_EQ(tmpx, x);
-    ASSERT_EQ(tmpy, y);
-  }
-}
-
-// Test that constant-time swap with false value is a no-op.
-template<typename operandT, typename returnT>
-void
-test_ct_swap_false()
-  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
+check_ct_swap_round(std::mt19937_64& gen)
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<returnT>)
 {
   constexpr returnT falsev = 0;
+  constexpr returnT truthv = static_cast<returnT>(~falsev);
 
+  operand_distribution<operandT> dis;
+
+  operandT x = dis(gen);
+  operandT y = dis(gen);
+
+  const auto orig_x = x;
+  const auto orig_y = y;
+
+  // Values are exchanged.
+  subtle::ct_swap(truthv, x, y);
+  ASSERT_EQ(x, orig_y);
+  ASSERT_EQ(y, orig_x);
+
+  // Values are left unchanged.
+  subtle::ct_swap(falsev, x, y);
+  ASSERT_EQ(x, orig_y);
+  ASSERT_EQ(y, orig_x);
+
+  // Values are exchanged back to the originals.
+  subtle::ct_swap(truthv, x, y);
+  ASSERT_EQ(x, orig_x);
+  ASSERT_EQ(y, orig_y);
+}
+
+template<typename operandT, typename returnT>
+void
+test_ct_swap()
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<returnT>)
+{
   std::random_device rd;
   std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis;
 
   for (size_t i = 0; i < ITERATIONS; i++) {
-    operandT x = dis(gen);
-    operandT y = dis(gen);
+    check_ct_swap_round<operandT, returnT>(gen);
+  }
+}
 
-    const auto tmpx = x;
-    const auto tmpy = y;
+template<typename operandT, typename branchT>
+void
+check_ct_swap_span_round(std::mt19937_64& gen)
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<branchT>)
+{
+  constexpr branchT falsev = 0;
+  constexpr branchT truthv = static_cast<branchT>(~falsev);
 
-    subtle::ct_swap(falsev, x, y); // x, y = x, y (no-op)
+  constexpr size_t MIN_SIZE = 0;
+  constexpr size_t MAX_SIZE = 1024;
 
-    ASSERT_EQ(tmpx, x);
-    ASSERT_EQ(tmpy, y);
+  operand_distribution<operandT> dis;
+  std::uniform_int_distribution<size_t> size_dis(MIN_SIZE, MAX_SIZE);
+
+  const size_t len = size_dis(gen);
+
+  std::vector<operandT> x(len);
+  std::vector<operandT> y(len);
+
+  std::ranges::generate(x, [&]() { return dis(gen); });
+  std::ranges::generate(y, [&]() { return dis(gen); });
+
+  const std::vector<operandT> orig_x = x;
+  const std::vector<operandT> orig_y = y;
+
+  // Buffers are exchanged
+  subtle::ct_swap<branchT, operandT>(truthv, std::span<operandT>(x), std::span<operandT>(y));
+  ASSERT_EQ(x, orig_y);
+  ASSERT_EQ(y, orig_x);
+
+  // Buffers are left unchanged.
+  subtle::ct_swap<branchT, operandT>(falsev, std::span<operandT>(x), std::span<operandT>(y));
+  ASSERT_EQ(x, orig_y);
+  ASSERT_EQ(y, orig_x);
+
+  // Buffers are exchanged back to the originals.
+  subtle::ct_swap<branchT, operandT>(truthv, std::span<operandT>(x), std::span<operandT>(y));
+  ASSERT_EQ(x, orig_x);
+  ASSERT_EQ(y, orig_y);
+}
+
+template<typename operandT, typename branchT>
+void
+test_ct_swap_span()
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<branchT>)
+{
+  std::random_device rd;
+  std::mt19937_64 gen(rd());
+
+  for (size_t i = 0; i < ITERATIONS; i++) {
+    check_ct_swap_span_round<operandT, branchT>(gen);
   }
 }
 
@@ -165,14 +261,14 @@ test_ct_swap_false()
 template<typename operandT, typename returnT>
 void
 test_ct_le()
-  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<returnT>)
 {
   constexpr returnT truthv = static_cast<returnT>(~returnT{ 0 });
   constexpr returnT falsev = 0;
 
   std::random_device rd;
   std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis;
+  operand_distribution<operandT> dis;
 
   for (size_t i = 0; i < ITERATIONS; i++) {
     const operandT x = dis(gen);
@@ -191,14 +287,14 @@ test_ct_le()
 template<typename operandT, typename returnT>
 void
 test_ct_gt()
-  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<returnT>)
 {
   constexpr returnT truthv = static_cast<returnT>(~returnT{ 0 });
   constexpr returnT falsev = 0;
 
   std::random_device rd;
   std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis;
+  operand_distribution<operandT> dis;
 
   for (size_t i = 0; i < ITERATIONS; i++) {
     const operandT x = dis(gen);
@@ -214,14 +310,14 @@ test_ct_gt()
 template<typename operandT, typename returnT>
 void
 test_ct_ge()
-  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<returnT>)
 {
   constexpr returnT truthv = static_cast<returnT>(~returnT{ 0 });
   constexpr returnT falsev = 0;
 
   std::random_device rd;
   std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis;
+  operand_distribution<operandT> dis;
 
   for (size_t i = 0; i < ITERATIONS; i++) {
     const operandT x = dis(gen);
@@ -240,14 +336,14 @@ test_ct_ge()
 template<typename operandT, typename returnT>
 void
 test_ct_lt()
-  requires(std::is_unsigned_v<operandT> && std::is_unsigned_v<returnT>)
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<returnT>)
 {
   constexpr returnT truthv = static_cast<returnT>(~returnT{ 0 });
   constexpr returnT falsev = 0;
 
   std::random_device rd;
   std::mt19937_64 gen(rd());
-  std::uniform_int_distribution<operandT> dis;
+  operand_distribution<operandT> dis;
 
   for (size_t i = 0; i < ITERATIONS; i++) {
     const operandT x = dis(gen);
@@ -255,6 +351,220 @@ test_ct_lt()
 
     const returnT z = subtle::ct_lt<operandT, returnT>(x, y);
     ASSERT_EQ(z, (x < y ? truthv : falsev));
+  }
+}
+
+// Test functional correctness of constant-time minimum operation over integer
+// types, checking the result against std::min.
+template<typename operandT>
+void
+test_ct_min()
+  requires(subtle::ct_operand<operandT>)
+{
+  std::random_device rd;
+  std::mt19937_64 gen(rd());
+  operand_distribution<operandT> dis;
+
+  for (size_t i = 0; i < ITERATIONS; i++) {
+    const operandT x = dis(gen);
+    const operandT y = dis(gen);
+
+    ASSERT_EQ(subtle::ct_min<operandT>(x, y), std::min(x, y));
+    ASSERT_EQ(subtle::ct_min<operandT>(y, x), std::min(x, y));
+    ASSERT_EQ(subtle::ct_min<operandT>(x, x), x);
+  }
+}
+
+// Test functional correctness of constant-time maximum operation over integer
+// types, checking the result against std::max.
+template<typename operandT>
+void
+test_ct_max()
+  requires(subtle::ct_operand<operandT>)
+{
+  std::random_device rd;
+  std::mt19937_64 gen(rd());
+  operand_distribution<operandT> dis;
+
+  for (size_t i = 0; i < ITERATIONS; i++) {
+    const operandT x = dis(gen);
+    const operandT y = dis(gen);
+
+    ASSERT_EQ(subtle::ct_max<operandT>(x, y), std::max(x, y));
+    ASSERT_EQ(subtle::ct_max<operandT>(y, x), std::max(x, y));
+    ASSERT_EQ(subtle::ct_max<operandT>(x, x), x);
+  }
+}
+
+// Test functional correctness of constant-time zeroize operation,
+// verifying all elements of a span are zeroed after the operation.
+template<typename T>
+void
+test_ct_zeroize()
+{
+  constexpr size_t MIN_SIZE = 0;
+  constexpr size_t MAX_SIZE = 1024;
+
+  std::random_device rd;
+  std::mt19937_64 gen(rd());
+  std::uniform_int_distribution<size_t> size_dis(MIN_SIZE, MAX_SIZE);
+
+  for (size_t i = 0; i < ITERATIONS; i++) {
+    const size_t len = size_dis(gen);
+    std::vector<T> buf(len);
+
+    std::ranges::generate(buf, [&]() -> T { return static_cast<T>(gen()); });
+    subtle::ct_zeroize(std::span<T>(buf));
+
+    for (const auto& elem : buf) {
+      ASSERT_EQ(elem, T{ 0 });
+    }
+  }
+}
+
+// Test functional correctness of constant-time memory comparison operation,
+// checking result against element-wise equality via std::equal.
+template<typename operandT, typename returnT>
+void
+test_ct_memcmp()
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<returnT>)
+{
+  constexpr returnT truthv = static_cast<returnT>(~returnT{ 0 });
+  constexpr returnT falsev = 0;
+
+  constexpr size_t MIN_SIZE = 0;
+  constexpr size_t MAX_SIZE = 1024;
+
+  std::random_device rd;
+  std::mt19937_64 gen(rd());
+  operand_distribution<operandT> dis;
+  std::uniform_int_distribution<size_t> size_dis(MIN_SIZE, MAX_SIZE);
+
+  for (size_t i = 0; i < ITERATIONS; i++) {
+    const size_t len = size_dis(gen);
+
+    std::vector<operandT> lhs(len);
+    std::vector<operandT> rhs(len);
+
+    std::ranges::generate(lhs, [&]() { return dis(gen); });
+    std::ranges::generate(rhs, [&]() { return dis(gen); });
+
+    const returnT z = subtle::ct_memcmp<operandT, returnT>(std::span<const operandT>(lhs), std::span<const operandT>(rhs));
+    const bool expected = std::equal(lhs.begin(), lhs.end(), rhs.begin());
+    ASSERT_EQ(z, (expected ? truthv : falsev));
+
+    // Identical spans must return truth value
+    const returnT self = subtle::ct_memcmp<operandT, returnT>(std::span<const operandT>(lhs), std::span<const operandT>(lhs));
+    ASSERT_EQ(self, truthv);
+  }
+}
+
+// Test functional correctness of constant-time conditional memcpy operation,
+// verifying that dst is overwritten with src on truth value and left unchanged
+// on false value.
+template<typename operandT, typename branchT>
+void
+test_ct_conditional_memcpy()
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<branchT>)
+{
+  constexpr branchT truthv = static_cast<branchT>(~branchT{ 0 });
+  constexpr branchT falsev = 0;
+
+  constexpr size_t MIN_SIZE = 0;
+  constexpr size_t MAX_SIZE = 1024;
+
+  std::random_device rd;
+  std::mt19937_64 gen(rd());
+  operand_distribution<operandT> dis;
+  std::uniform_int_distribution<size_t> size_dis(MIN_SIZE, MAX_SIZE);
+
+  for (size_t i = 0; i < ITERATIONS; i++) {
+    const size_t len = size_dis(gen);
+
+    std::vector<operandT> src(len);
+    std::vector<operandT> dst(len);
+
+    std::ranges::generate(src, [&]() { return dis(gen); });
+    std::ranges::generate(dst, [&]() { return dis(gen); });
+
+    // Truth value: dst must become an exact copy of src.
+    std::vector<operandT> dst_truth = dst;
+    subtle::ct_conditional_memcpy<branchT, operandT>(truthv, std::span<operandT>(dst_truth), std::span<const operandT>(src));
+    ASSERT_EQ(dst_truth, src);
+
+    // False value: dst must retain its original contents.
+    std::vector<operandT> dst_false = dst;
+    subtle::ct_conditional_memcpy<branchT, operandT>(falsev, std::span<operandT>(dst_false), std::span<const operandT>(src));
+    ASSERT_EQ(dst_false, dst);
+  }
+}
+
+// Test functional correctness of constant-time conditional memset operation,
+// verifying that dst is filled with the given value on truth value and left
+// unchanged on false value.
+template<typename operandT, typename branchT>
+void
+test_ct_conditional_memset()
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<branchT>)
+{
+  constexpr branchT truthv = static_cast<branchT>(~branchT{ 0 });
+  constexpr branchT falsev = 0;
+
+  constexpr size_t MIN_SIZE = 0;
+  constexpr size_t MAX_SIZE = 1024;
+
+  std::random_device rd;
+  std::mt19937_64 gen(rd());
+  operand_distribution<operandT> dis;
+  std::uniform_int_distribution<size_t> size_dis(MIN_SIZE, MAX_SIZE);
+
+  for (size_t i = 0; i < ITERATIONS; i++) {
+    const size_t len = size_dis(gen);
+
+    std::vector<operandT> dst(len);
+    std::ranges::generate(dst, [&]() { return dis(gen); });
+
+    const operandT val = dis(gen);
+
+    // Truth value: every element of dst must become val.
+    std::vector<operandT> dst_truth = dst;
+    subtle::ct_conditional_memset<branchT, operandT>(truthv, std::span<operandT>(dst_truth), val);
+    std::vector<operandT> expected(len, val);
+    ASSERT_EQ(dst_truth, expected);
+
+    // False value: dst must retain its original contents.
+    std::vector<operandT> dst_false = dst;
+    subtle::ct_conditional_memset<branchT, operandT>(falsev, std::span<operandT>(dst_false), val);
+    ASSERT_EQ(dst_false, dst);
+  }
+}
+
+// Test functional correctness of constant-time table lookup operation, checking
+// the scanned result against a plain table[idx] access.
+template<typename operandT, typename indexT>
+void
+test_ct_lookup()
+  requires(subtle::ct_operand<operandT> && std::is_unsigned_v<indexT>)
+{
+  constexpr size_t MIN_SIZE = 1;
+  constexpr size_t MAX_SIZE = 256; // fits the narrowest ( uint8_t ) index range
+
+  std::random_device rd;
+  std::mt19937_64 gen(rd());
+  operand_distribution<operandT> dis;
+  std::uniform_int_distribution<size_t> size_dis(MIN_SIZE, MAX_SIZE);
+
+  for (size_t i = 0; i < ITERATIONS; i++) {
+    const size_t len = size_dis(gen);
+
+    std::vector<operandT> table(len);
+    std::ranges::generate(table, [&]() { return dis(gen); });
+
+    std::uniform_int_distribution<size_t> idx_dis(0, len - 1);
+    const size_t idx = idx_dis(gen);
+
+    const operandT z = subtle::ct_lookup<indexT, operandT>(static_cast<indexT>(idx), std::span<const operandT>(table));
+    ASSERT_EQ(z, table[idx]);
   }
 }
 
